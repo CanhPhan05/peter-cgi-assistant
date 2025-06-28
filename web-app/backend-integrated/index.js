@@ -424,7 +424,7 @@ app.get('/api/chat/conversations/:id', authenticateToken, async (req, res) => {
 
 // ============ IMAGES ROUTES ============
 const upload = multer({ 
-  storage: multer.memoryBuffer(),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }
 });
 
