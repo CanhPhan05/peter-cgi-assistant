@@ -3,6 +3,14 @@ import './App.css';
 
 const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
   const [links, setLinks] = useState([]);
+  const [categories, setCategories] = useState({
+    'tools': { name: 'Công cụ & Phần mềm', icon: '🛠️', description: 'Phần mềm và công cụ CGI chuyên nghiệp' },
+    'standards': { name: 'Tiêu chuẩn & Quy tắc', icon: '📏', description: 'Tiêu chuẩn ngành và quy tắc chất lượng' },
+    'inspiration': { name: 'Cảm hứng & Tham khảo', icon: '🎨', description: 'Portfolio và tác phẩm tham khảo' },
+    'industry_trends': { name: 'Xu hướng ngành', icon: '📈', description: 'Tin tức và xu hướng mới nhất' },
+    'tutorials': { name: 'Hướng dẫn & Khóa học', icon: '📚', description: 'Tài liệu học tập và hướng dẫn' },
+    'general': { name: 'Chung', icon: '📋', description: 'Tài liệu tổng hợp khác' }
+  });
   const [settings, setSettings] = useState({
     enabled: true,
     auto_fetch: true,
@@ -14,6 +22,8 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLink, setEditingLink] = useState(null);
   const [testResults, setTestResults] = useState({});
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
 
   useEffect(() => {
     loadKnowledgeLinks();
@@ -35,6 +45,11 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
           auto_fetch: data.auto_fetch,
           cache_duration_hours: data.cache_duration_hours
         });
+        
+        // Load categories from config if available
+        if (data.categories) {
+          setCategories(data.categories);
+        }
       } else {
         setError('Không thể tải knowledge links');
       }
@@ -200,6 +215,100 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
     }
   };
 
+  const addCategory = async (categoryData) => {
+    try {
+      const response = await fetch(`/api/admin/knowledge-links/categories/${categoryData.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({
+          name: categoryData.name,
+          icon: categoryData.icon || '📋',
+          description: categoryData.description || ''
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Reload categories from server
+        await loadKnowledgeLinks();
+        setMessage('✅ Category đã được thêm');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setError(data.error || 'Không thể thêm category');
+      }
+    } catch (error) {
+      console.error('Add category error:', error);
+      setError('Lỗi kết nối');
+    }
+  };
+
+  const updateCategory = async (categoryId, categoryData) => {
+    try {
+      const response = await fetch(`/api/admin/knowledge-links/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify(categoryData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Reload categories from server
+        await loadKnowledgeLinks();
+        setMessage('✅ Category đã được cập nhật');
+        setEditingCategory(null);
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setError(data.error || 'Không thể cập nhật category');
+      }
+    } catch (error) {
+      console.error('Update category error:', error);
+      setError('Lỗi kết nối');
+    }
+  };
+
+  const deleteCategory = async (categoryId) => {
+    const categoryLinks = links.filter(link => link.category === categoryId);
+    
+    if (categoryLinks.length > 0) {
+      if (!window.confirm(`Category này có ${categoryLinks.length} links. Bạn có chắc muốn xóa? (Các links sẽ chuyển về "general")`)) {
+        return;
+      }
+    } else {
+      if (!window.confirm('Bạn có chắc muốn xóa category này?')) {
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(`/api/admin/knowledge-links/categories/${categoryId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Reload both categories and links from server
+        await loadKnowledgeLinks();
+        setMessage('✅ Category đã được xóa');
+        onStatsUpdate && onStatsUpdate();
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setError(data.error || 'Không thể xóa category');
+      }
+    } catch (error) {
+      console.error('Delete category error:', error);
+      setError('Lỗi kết nối');
+    }
+  };
+
   // Group links by category
   const linksByCategory = links.reduce((acc, link) => {
     const category = link.category || 'general';
@@ -209,15 +318,6 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
     acc[category].push(link);
     return acc;
   }, {});
-
-  const categories = {
-    'tools': { name: 'Công cụ & Phần mềm', icon: '🛠️' },
-    'standards': { name: 'Tiêu chuẩn & Quy tắc', icon: '📏' },
-    'inspiration': { name: 'Cảm hứng & Tham khảo', icon: '🎨' },
-    'industry_trends': { name: 'Xu hướng ngành', icon: '📈' },
-    'tutorials': { name: 'Hướng dẫn & Khóa học', icon: '📚' },
-    'general': { name: 'Chung', icon: '📋' }
-  };
 
   if (loading) {
     return (
@@ -251,6 +351,13 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
           </div>
           
           <button
+            onClick={() => setShowCategoryManager(true)}
+            className="admin-btn secondary"
+          >
+            📁 Quản lý Categories
+          </button>
+          
+          <button
             onClick={() => setShowAddForm(true)}
             className="admin-btn primary"
           >
@@ -267,6 +374,19 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
         <div className="error-message">❌ {error}</div>
       )}
 
+      {/* Category Manager Modal */}
+      {showCategoryManager && (
+        <CategoryManager
+          categories={categories}
+          onAddCategory={addCategory}
+          onUpdateCategory={updateCategory}
+          onDeleteCategory={deleteCategory}
+          onClose={() => setShowCategoryManager(false)}
+          editingCategory={editingCategory}
+          setEditingCategory={setEditingCategory}
+        />
+      )}
+
       {/* Add Link Form */}
       {showAddForm && (
         <LinkForm
@@ -275,6 +395,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
           adminToken={adminToken}
           testLink={testLink}
           testResults={testResults}
+          categories={categories}
         />
       )}
 
@@ -287,38 +408,65 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
           adminToken={adminToken}
           testLink={testLink}
           testResults={testResults}
+          categories={categories}
           isEditing={true}
         />
       )}
 
       {/* Links by Category */}
       <div className="knowledge-categories">
-        {Object.entries(linksByCategory).map(([categoryKey, categoryLinks]) => (
-          <div key={categoryKey} className="knowledge-category">
-            <div className="category-header">
-              <h3>
-                <span className="category-icon">
-                  {categories[categoryKey]?.icon || '📋'}
-                </span>
-                {categories[categoryKey]?.name || categoryKey}
-                <span className="category-count">({categoryLinks.length})</span>
-              </h3>
-            </div>
+        {Object.entries(linksByCategory).map(([categoryKey, categoryLinks]) => {
+          const categoryInfo = categories[categoryKey] || { name: categoryKey, icon: '📋', description: '' };
+          
+          return (
+            <div key={categoryKey} className="knowledge-category">
+              <div className="category-header">
+                <div className="category-info">
+                  <h3>
+                    <span className="category-icon">{categoryInfo.icon}</span>
+                    {categoryInfo.name}
+                    <span className="category-count">({categoryLinks.length})</span>
+                  </h3>
+                  {categoryInfo.description && (
+                    <p className="category-description">{categoryInfo.description}</p>
+                  )}
+                </div>
+                
+                <div className="category-actions">
+                  <button
+                    onClick={() => setEditingCategory(categoryKey)}
+                    className="action-btn edit"
+                    title="Chỉnh sửa category"
+                  >
+                    ✏️
+                  </button>
+                  {categoryKey !== 'general' && (
+                    <button
+                      onClick={() => deleteCategory(categoryKey)}
+                      className="action-btn delete"
+                      title="Xóa category"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
 
-            <div className="category-links">
-              {categoryLinks.map((link) => (
-                <LinkCard
-                  key={link.id}
-                  link={link}
-                  onEdit={() => setEditingLink(link)}
-                  onDelete={() => deleteLink(link.id)}
-                  onTest={() => testLink(link.url, link.type)}
-                  testResult={testResults[`${link.url}_${link.type}`]}
-                />
-              ))}
+              <div className="category-links">
+                {categoryLinks.map((link) => (
+                  <LinkCard
+                    key={link.id}
+                    link={link}
+                    onEdit={() => setEditingLink(link)}
+                    onDelete={() => deleteLink(link.id)}
+                    onTest={() => testLink(link.url, link.type)}
+                    testResult={testResults[`${link.url}_${link.type}`]}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {links.length === 0 && (
           <div className="empty-state">
@@ -367,8 +515,287 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
   );
 };
 
-// Link Form Component
-const LinkForm = ({ link, onSave, onCancel, adminToken, testLink, testResults, isEditing = false }) => {
+// Category Manager Component
+const CategoryManager = ({ 
+  categories, 
+  onAddCategory, 
+  onUpdateCategory, 
+  onDeleteCategory, 
+  onClose,
+  editingCategory,
+  setEditingCategory 
+}) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  return (
+    <div className="category-manager-overlay">
+      <div className="category-manager">
+        <div className="form-header">
+          <h3>📁 Quản lý Categories</h3>
+          <button onClick={onClose} className="close-btn">❌</button>
+        </div>
+
+        <div className="category-manager-content">
+          <div className="category-manager-header">
+            <p>Quản lý các danh mục để phân loại knowledge links</p>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="admin-btn primary"
+            >
+              ➕ Thêm Category
+            </button>
+          </div>
+
+          {/* Add Category Form */}
+          {showAddForm && (
+            <CategoryForm
+              onSave={(data) => {
+                onAddCategory(data);
+                setShowAddForm(false);
+              }}
+              onCancel={() => setShowAddForm(false)}
+            />
+          )}
+
+          {/* Edit Category Form */}
+          {editingCategory && (
+            <CategoryForm
+              category={{
+                id: editingCategory,
+                ...categories[editingCategory]
+              }}
+              onSave={(data) => onUpdateCategory(editingCategory, data)}
+              onCancel={() => setEditingCategory(null)}
+              isEditing={true}
+            />
+          )}
+
+          {/* Categories List */}
+          <div className="categories-list">
+            {Object.entries(categories).map(([categoryId, categoryData]) => (
+              <div key={categoryId} className="category-item">
+                <div className="category-item-info">
+                  <div className="category-item-header">
+                    <span className="category-icon">{categoryData.icon}</span>
+                    <h4>{categoryData.name}</h4>
+                    <span className="category-id">({categoryId})</span>
+                  </div>
+                  {categoryData.description && (
+                    <p className="category-item-description">{categoryData.description}</p>
+                  )}
+                </div>
+                
+                <div className="category-item-actions">
+                  <button
+                    onClick={() => setEditingCategory(categoryId)}
+                    className="action-btn edit"
+                    title="Chỉnh sửa"
+                  >
+                    ✏️
+                  </button>
+                  {categoryId !== 'general' && (
+                    <button
+                      onClick={() => onDeleteCategory(categoryId)}
+                      className="action-btn delete"
+                      title="Xóa"
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Category Form Component
+const CategoryForm = ({ category, onSave, onCancel, isEditing = false }) => {
+  const [formData, setFormData] = useState({
+    id: category?.id || '',
+    name: category?.name || '',
+    icon: category?.icon || '📋',
+    description: category?.description || ''
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    if (!isEditing && !formData.id.trim()) {
+      setError('ID category là bắt buộc');
+      return;
+    }
+    
+    if (!formData.name.trim()) {
+      setError('Tên category là bắt buộc');
+      return;
+    }
+    
+    // Validate ID format (only for new categories)
+    if (!isEditing) {
+      const idPattern = /^[a-z0-9_]+$/;
+      if (!idPattern.test(formData.id)) {
+        setError('ID chỉ được chứa chữ thường, số và dấu gạch dưới');
+        return;
+      }
+      
+      // Check for reserved IDs
+      const reservedIds = ['admin', 'api', 'config', 'general'];
+      if (reservedIds.includes(formData.id.toLowerCase())) {
+        setError('ID này đã được sử dụng bởi hệ thống');
+        return;
+      }
+    }
+    
+    setError('');
+    setSaving(true);
+    
+    try {
+      await onSave(formData);
+      
+      // If we reach here, it was successful
+      if (!isEditing) {
+        // Reset form for new category
+        setFormData({
+          id: '',
+          name: '',
+          icon: '📋',
+          description: ''
+        });
+      }
+    } catch (error) {
+      setError(error.message || 'Có lỗi xảy ra');
+    }
+    
+    setSaving(false);
+  };
+
+  const handleIdChange = (e) => {
+    let value = e.target.value;
+    // Auto-convert to lowercase and replace spaces with underscores
+    value = value.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_');
+    setFormData(prev => ({ ...prev, id: value }));
+  };
+
+  const iconOptions = [
+    '📋', '🛠️', '📏', '🎨', '📈', '📚', '🔧', '💡', '🎯', '📊', 
+    '🖥️', '📱', '🎮', '🎬', '🎵', '📷', '🖼️', '📝', '📖', '🔍',
+    '🌟', '🚀', '💎', '🔥', '⚡', '🌈', '🎭', '🏆', '🎪', '🎨'
+  ];
+
+  return (
+    <div className="category-form">
+      <h4>{isEditing ? '✏️ Chỉnh sửa Category' : '➕ Thêm Category mới'}</h4>
+      
+      {error && (
+        <div className="error-message">❌ {error}</div>
+      )}
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>ID Category *</label>
+            <input
+              type="text"
+              value={formData.id}
+              onChange={handleIdChange}
+              required
+              placeholder="vd: my_category"
+              disabled={isEditing || saving}
+              minLength="2"
+              maxLength="30"
+            />
+            <small className="form-hint">
+              Chỉ sử dụng chữ thường, số và dấu gạch dưới. VD: web_design, tools_3d
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label>Tên hiển thị *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              required
+              placeholder="Tên category"
+              disabled={saving}
+              maxLength="50"
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Icon</label>
+            <div className="icon-selector">
+              <input
+                type="text"
+                value={formData.icon}
+                onChange={(e) => setFormData(prev => ({ ...prev, icon: e.target.value }))}
+                placeholder="Emoji icon"
+                maxLength="2"
+                disabled={saving}
+              />
+              <div className="icon-options">
+                {iconOptions.map(icon => (
+                  <button
+                    key={icon}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, icon }))}
+                    className={`icon-option ${formData.icon === icon ? 'selected' : ''}`}
+                    disabled={saving}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="form-group full-width">
+          <label>Mô tả</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            placeholder="Mô tả ngắn gọn về category này (tùy chọn)"
+            rows="3"
+            disabled={saving}
+            maxLength="200"
+          />
+          <small className="form-hint">
+            {formData.description.length}/200 ký tự
+          </small>
+        </div>
+
+        <div className="form-actions">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="admin-btn secondary"
+            disabled={saving}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="admin-btn primary"
+            disabled={saving}
+          >
+            {saving ? '🔄 Đang lưu...' : (isEditing ? '💾 Cập nhật' : '➕ Thêm')}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+// Update LinkForm to use dynamic categories
+const LinkForm = ({ link, onSave, onCancel, adminToken, testLink, testResults, categories = {}, isEditing = false }) => {
   const [formData, setFormData] = useState({
     title: link?.title || '',
     url: link?.url || '',
@@ -473,12 +900,11 @@ const LinkForm = ({ link, onSave, onCancel, adminToken, testLink, testResults, i
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
               >
-                <option value="tools">Công cụ & Phần mềm</option>
-                <option value="standards">Tiêu chuẩn & Quy tắc</option>
-                <option value="inspiration">Cảm hứng & Tham khảo</option>
-                <option value="industry_trends">Xu hướng ngành</option>
-                <option value="tutorials">Hướng dẫn & Khóa học</option>
-                <option value="general">Chung</option>
+                {Object.entries(categories).map(([categoryId, categoryData]) => (
+                  <option key={categoryId} value={categoryId}>
+                    {categoryData.icon} {categoryData.name}
+                  </option>
+                ))}
               </select>
             </div>
 

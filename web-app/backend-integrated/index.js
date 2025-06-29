@@ -1072,6 +1072,7 @@ app.get('/api/admin/knowledge-links', authenticateAdmin, async (req, res) => {
         success: true,
         enabled: false,
         links: [],
+        categories: getDefaultCategories(),
         cache_info: { total_cached: 0 }
       });
     }
@@ -1100,6 +1101,7 @@ app.get('/api/admin/knowledge-links', authenticateAdmin, async (req, res) => {
       auto_fetch: config.knowledge_links.auto_fetch,
       cache_duration_hours: config.knowledge_links.cache_duration_hours,
       links: linksWithCache,
+      categories: config.knowledge_links.categories || getDefaultCategories(),
       cache_info: {
         total_cached: knowledgeCache.size
       }
@@ -1110,6 +1112,374 @@ app.get('/api/admin/knowledge-links', authenticateAdmin, async (req, res) => {
     res.status(500).json({ error: 'Không thể lấy knowledge links' });
   }
 });
+
+// Helper function for default categories
+const getDefaultCategories = () => ({
+  'tools': { name: 'Công cụ & Phần mềm', icon: '🛠️', description: 'Phần mềm và công cụ CGI chuyên nghiệp' },
+  'standards': { name: 'Tiêu chuẩn & Quy tắc', icon: '📏', description: 'Tiêu chuẩn ngành và quy tắc chất lượng' },
+  'inspiration': { name: 'Cảm hứng & Tham khảo', icon: '🎨', description: 'Portfolio và tác phẩm tham khảo' },
+  'industry_trends': { name: 'Xu hướng ngành', icon: '📈', description: 'Tin tức và xu hướng mới nhất' },
+  'tutorials': { name: 'Hướng dẫn & Khóa học', icon: '📚', description: 'Tài liệu học tập và hướng dẫn' },
+  'general': { name: 'Chung', icon: '📋', description: 'Tài liệu tổng hợp khác' }
+});
+
+// Update categories
+app.put('/api/admin/knowledge-links/categories', authenticateAdmin, async (req, res) => {
+  try {
+    const { categories } = req.body;
+
+    if (!categories || typeof categories !== 'object') {
+      return res.status(400).json({ error: 'Categories object is required' });
+    }
+
+    const config = await loadConfigFromFile();
+    if (!config) {
+      return res.status(500).json({ error: 'Không thể load config' });
+    }
+
+    // Initialize knowledge_links if not exists
+    if (!config.knowledge_links) {
+      config.knowledge_links = {
+        enabled: true,
+        auto_fetch: true,
+        cache_duration_hours: 24,
+        links: [],
+        categories: getDefaultCategories()
+      };
+    }
+
+    // Update categories
+    config.knowledge_links.categories = categories;
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Categories đã được cập nhật',
+      categories: categories
+    });
+
+  } catch (error) {
+    console.error('Update categories error:', error);
+    res.status(500).json({ error: 'Không thể cập nhật categories' });
+  }
+});
+
+// Add single category
+app.post('/api/admin/knowledge-links/categories/:categoryId', authenticateAdmin, async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const categoryData = req.body;
+
+    if (!categoryData.name) {
+      return res.status(400).json({ error: 'Category name is required' });
+    }
+
+    const config = await loadConfigFromFile();
+    if (!config) {
+      return res.status(500).json({ error: 'Không thể load config' });
+    }
+
+    // Initialize knowledge_links if not exists
+    if (!config.knowledge_links) {
+      config.knowledge_links = {
+        enabled: true,
+        auto_fetch: true,
+        cache_duration_hours: 24,
+        links: [],
+        categories: getDefaultCategories()
+      };
+    }
+
+    if (!config.knowledge_links.categories) {
+      config.knowledge_links.categories = getDefaultCategories();
+    }
+
+    // Check if category already exists
+    if (config.knowledge_links.categories[categoryId]) {
+      return res.status(400).json({ error: 'Category ID đã tồn tại' });
+    }
+
+    // Add new category
+    config.knowledge_links.categories[categoryId] = {
+      name: categoryData.name,
+      icon: categoryData.icon || '📋',
+      description: categoryData.description || ''
+    };
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Category đã được thêm',
+      category: config.knowledge_links.categories[categoryId]
+    });
+
+  } catch (error) {
+    console.error('Add category error:', error);
+    res.status(500).json({ error: 'Không thể thêm category' });
+  }
+});
+
+// Update single category  
+app.put('/api/admin/knowledge-links/categories/:categoryId', authenticateAdmin, async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const updateData = req.body;
+
+    const config = await loadConfigFromFile();
+    if (!config?.knowledge_links?.categories) {
+      return res.status(404).json({ error: 'Không tìm thấy categories' });
+    }
+
+    if (!config.knowledge_links.categories[categoryId]) {
+      return res.status(404).json({ error: 'Không tìm thấy category' });
+    }
+
+    // Update category
+    config.knowledge_links.categories[categoryId] = {
+      ...config.knowledge_links.categories[categoryId],
+      ...updateData
+    };
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Category đã được cập nhật',
+      category: config.knowledge_links.categories[categoryId]
+    });
+
+  } catch (error) {
+    console.error('Update category error:', error);
+    res.status(500).json({ error: 'Không thể cập nhật category' });
+  }
+});
+
+// Delete single category
+app.delete('/api/admin/knowledge-links/categories/:categoryId', authenticateAdmin, async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+
+    // Prevent deleting general category
+    if (categoryId === 'general') {
+      return res.status(400).json({ error: 'Không thể xóa category "general"' });
+    }
+
+    const config = await loadConfigFromFile();
+    if (!config?.knowledge_links?.categories) {
+      return res.status(404).json({ error: 'Không tìm thấy categories' });
+    }
+
+    if (!config.knowledge_links.categories[categoryId]) {
+      return res.status(404).json({ error: 'Không tìm thấy category' });
+    }
+
+    // Move all links in this category to general
+    if (config.knowledge_links.links) {
+      config.knowledge_links.links = config.knowledge_links.links.map(link => 
+        link.category === categoryId 
+          ? { ...link, category: 'general' }
+          : link
+      );
+    }
+
+    // Remove category
+    const deletedCategory = config.knowledge_links.categories[categoryId];
+    delete config.knowledge_links.categories[categoryId];
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Category đã được xóa',
+      deleted_category: deletedCategory
+    });
+
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ error: 'Không thể xóa category' });
+  }
+});
+
+// Test fetch content for admin
+app.post('/api/admin/knowledge-links/test', authenticateAdmin, async (req, res) => {
+  try {
+    const { url, type } = req.body;
+
+    if (!url || !type) {
+      return res.status(400).json({ error: 'URL và type là bắt buộc' });
+    }
+
+    // Test fetch content
+    const result = await fetchLinkContent(url, type);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        content_length: result.content?.length || 0,
+        content_preview: result.content?.substring(0, 500) || '',
+        message: 'Test thành công'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Test thất bại'
+      });
+    }
+
+  } catch (error) {
+    console.error('Test knowledge link error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Không thể test link' 
+    });
+  }
+});
+
+// Toggle Knowledge Links
+app.put('/api/admin/knowledge-links/toggle', authenticateAdmin, async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    const config = await loadConfigFromFile();
+    if (!config) {
+      return res.status(500).json({ error: 'Không thể load config' });
+    }
+
+    // Initialize knowledge_links if not exists
+    if (!config.knowledge_links) {
+      config.knowledge_links = {
+        enabled: true,
+        auto_fetch: true,
+        cache_duration_hours: 24,
+        links: [],
+        categories: getDefaultCategories()
+      };
+    }
+
+    // Update enabled status
+    config.knowledge_links.enabled = enabled;
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: `Knowledge Links đã được ${enabled ? 'bật' : 'tắt'}`,
+      enabled: enabled
+    });
+
+  } catch (error) {
+    console.error('Toggle knowledge links error:', error);
+    res.status(500).json({ error: 'Không thể thay đổi trạng thái Knowledge Links' });
+  }
+});
+
+// Update knowledge links settings
+app.put('/api/admin/knowledge-links/settings', authenticateAdmin, async (req, res) => {
+  try {
+    const { enabled, auto_fetch, cache_duration_hours } = req.body;
+
+    const config = await loadConfigFromFile();
+    if (!config) {
+      return res.status(500).json({ error: 'Không thể load config' });
+    }
+
+    // Initialize knowledge_links if not exists
+    if (!config.knowledge_links) {
+      config.knowledge_links = {
+        enabled: true,
+        auto_fetch: true,
+        cache_duration_hours: 24,
+        links: [],
+        categories: getDefaultCategories()
+      };
+    }
+
+    // Update settings
+    if (enabled !== undefined) config.knowledge_links.enabled = enabled;
+    if (auto_fetch !== undefined) config.knowledge_links.auto_fetch = auto_fetch;
+    if (cache_duration_hours !== undefined) config.knowledge_links.cache_duration_hours = cache_duration_hours;
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Cài đặt Knowledge Links đã được cập nhật',
+      settings: {
+        enabled: config.knowledge_links.enabled,
+        auto_fetch: config.knowledge_links.auto_fetch,
+        cache_duration_hours: config.knowledge_links.cache_duration_hours
+      }
+    });
+
+  } catch (error) {
+    console.error('Update knowledge links settings error:', error);
+    res.status(500).json({ error: 'Không thể cập nhật cài đặt' });
+  }
+});
+
+// Clear knowledge cache
+app.post('/api/admin/knowledge-links/clear-cache', authenticateAdmin, async (req, res) => {
+  try {
+    const clearedCount = knowledgeCache.size;
+    knowledgeCache.clear();
+
+    res.json({
+      success: true,
+      message: `Đã xóa ${clearedCount} items từ cache`,
+      cleared_count: clearedCount
+    });
+
+  } catch (error) {
+    console.error('Clear knowledge cache error:', error);
+    res.status(500).json({ error: 'Không thể xóa cache' });
+  }
+});
+
+// ============ KNOWLEDGE LINKS CRUD APIs ============
 
 // Add new knowledge link
 app.post('/api/admin/knowledge-links', authenticateAdmin, async (req, res) => {
@@ -1269,72 +1639,6 @@ app.delete('/api/admin/knowledge-links/:id', authenticateAdmin, async (req, res)
   } catch (error) {
     console.error('Delete knowledge link error:', error);
     res.status(500).json({ error: 'Không thể xóa knowledge link' });
-  }
-});
-
-// Test fetch content for admin
-app.post('/api/admin/knowledge-links/test', authenticateAdmin, async (req, res) => {
-  try {
-    const { url, type } = req.body;
-
-    if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
-    }
-
-    const content = await fetchLinkContent(url, type || 'web');
-
-    res.json({
-      success: true,
-      url,
-      type: type || 'web',
-      content_length: content.length,
-      content_preview: content.substring(0, 1000) + (content.length > 1000 ? '...' : ''),
-      test_timestamp: new Date().toISOString()
-    });
-
-  } catch (error) {
-    console.error('Test knowledge link error:', error);
-    res.status(500).json({ error: 'Không thể test knowledge link' });
-  }
-});
-
-// Toggle knowledge links system
-app.put('/api/admin/knowledge-links/toggle', authenticateAdmin, async (req, res) => {
-  try {
-    const { enabled } = req.body;
-
-    const config = await loadConfigFromFile();
-    if (!config) {
-      return res.status(500).json({ error: 'Không thể load config' });
-    }
-
-    if (!config.knowledge_links) {
-      config.knowledge_links = {
-        enabled: true,
-        auto_fetch: true,
-        cache_duration_hours: 24,
-        links: []
-      };
-    }
-
-    config.knowledge_links.enabled = enabled !== false;
-
-    const saved = await saveConfigToFile(config);
-    if (!saved) {
-      return res.status(500).json({ error: 'Không thể lưu config' });
-    }
-
-    currentConfig = config;
-
-    res.json({
-      success: true,
-      message: `Knowledge links đã được ${enabled ? 'bật' : 'tắt'}`,
-      enabled: config.knowledge_links.enabled
-    });
-
-  } catch (error) {
-    console.error('Toggle knowledge links error:', error);
-    res.status(500).json({ error: 'Không thể toggle knowledge links' });
   }
 });
 
