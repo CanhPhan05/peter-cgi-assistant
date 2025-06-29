@@ -17,10 +17,14 @@ const port = process.env.PORT || 3001;
 // External Login API Configuration (from login-modules)
 const EXTERNAL_API_URL = 'http://14.225.218.11:5050/login';
 
-// Database connection (chỉ lưu conversations, không lưu users)
+// Database connection with IPv6 fix
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10,
+  application_name: 'peter-cgi-assistant'
 });
 
 // Middleware
