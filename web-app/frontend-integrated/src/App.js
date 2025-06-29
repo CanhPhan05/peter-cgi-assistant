@@ -304,9 +304,22 @@ const ChatPage = () => {
   // Add paste event listener
   React.useEffect(() => {
     const handlePasteEvent = (e) => {
-      // Only handle paste if we're not in an input field that should handle its own paste
-      if (e.target.classList.contains('message-input')) return;
-      handlePaste(e);
+      // Check if clipboard contains images
+      const items = e.clipboardData.items;
+      let hasImage = false;
+      
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          hasImage = true;
+          break;
+        }
+      }
+      
+      // If has image, handle it regardless of target
+      if (hasImage) {
+        e.preventDefault(); // Prevent default paste behavior
+        handlePaste(e);
+      }
     };
     
     document.addEventListener('paste', handlePasteEvent);
