@@ -10,6 +10,8 @@ const multer = require('multer');
 const sharp = require('sharp');
 const axios = require('axios');
 const crypto = require('crypto');
+const fs = require('fs').promises;
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -876,6 +878,464 @@ app.get('/', (req, res) => {
     },
     externalAPI: EXTERNAL_API_URL
   });
+});
+
+// ============ ADMIN SYSTEM ============
+
+// Admin credentials (sẽ được lưu trong database sau)
+const ADMIN_CREDENTIALS = {
+  email: 'admin@gmail.com',
+  password: 'Admin', // Will be hashed in production
+  canChangePassword: true
+};
+
+// Admin authentication
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email và password là bắt buộc' });
+    }
+
+    // Check admin credentials
+    if (email.toLowerCase() !== ADMIN_CREDENTIALS.email.toLowerCase() || 
+        password !== ADMIN_CREDENTIALS.password) {
+      return res.status(401).json({ error: 'Email hoặc password admin không đúng' });
+    }
+
+    // Generate admin JWT token
+    const adminToken = jwt.sign(
+      { 
+        id: 'admin',
+        email: ADMIN_CREDENTIALS.email,
+        role: 'admin'
+      },
+      process.env.JWT_SECRET + '_ADMIN', // Different secret for admin
+      { expiresIn: '24h' } // Shorter expiry for admin
+    );
+
+    res.json({
+      success: true,
+      message: 'Đăng nhập admin thành công',
+      token: adminToken,
+      admin: {
+        email: ADMIN_CREDENTIALS.email,
+        role: 'admin',
+        canChangePassword: ADMIN_CREDENTIALS.canChangePassword
+      }
+    });
+
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({ error: 'Đăng nhập admin thất bại' });
+  }
+});
+
+// Admin auth middleware
+const authenticateAdmin = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Admin access token required' });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET + '_ADMIN', (err, admin) => {
+    if (err || admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Invalid admin token' });
+    }
+    req.admin = admin;
+    next();
+  });
+};
+
+// Change admin password
+app.put('/api/admin/change-password', authenticateAdmin, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password và new password là bắt buộc' });
+    }
+
+    if (currentPassword !== ADMIN_CREDENTIALS.password) {
+      return res.status(401).json({ error: 'Current password không đúng' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password phải ít nhất 6 ký tự' });
+    }
+
+    // Update admin password (in production, this should be saved to database)
+    ADMIN_CREDENTIALS.password = newPassword;
+
+    res.json({
+      success: true,
+      message: 'Đổi password admin thành công'
+    });
+
+  } catch (error) {
+    console.error('Change admin password error:', error);
+    res.status(500).json({ error: 'Không thể đổi password admin' });
+  }
+});
+
+// ============ CONFIG MANAGEMENT ADMIN APIs ============
+
+// Load config from file
+const loadConfigFromFile = async () => {
+  try {
+    const configPath = path.join(__dirname, '../frontend-integrated/src/config.json');
+    const configData = await fs.readFile(configPath, 'utf8');
+    return JSON.parse(configData);
+  } catch (error) {
+    console.error('Failed to load config file:', error);
+    return null;
+  }
+};
+
+// Save config to file
+const saveConfigToFile = async (config) => {
+  try {
+    const configPath = path.join(__dirname, '../frontend-integrated/src/config.json');
+    await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf8');
+    return true;
+  } catch (error) {
+    console.error('Failed to save config file:', error);
+    return false;
+  }
+};
+
+// Get full config for admin
+app.get('/api/admin/config', authenticateAdmin, async (req, res) => {
+  try {
+    const config = await loadConfigFromFile();
+    if (!config) {
+      return res.status(500).json({ error: 'Không thể load config file' });
+    }
+
+    res.json({
+      success: true,
+      config: config
+    });
+
+  } catch (error) {
+    console.error('Get admin config error:', error);
+    res.status(500).json({ error: 'Không thể lấy config' });
+  }
+});
+
+// Update full config
+app.put('/api/admin/config', authenticateAdmin, async (req, res) => {
+  try {
+    const { config } = req.body;
+
+    if (!config) {
+      return res.status(400).json({ error: 'Config is required' });
+    }
+
+    // Validate basic config structure
+    if (!config.ai || !config.personality || !config.expertise) {
+      return res.status(400).json({ error: 'Invalid config structure' });
+    }
+
+    // Save to file
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config file' });
+    }
+
+    // Update current config in memory
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Config đã được cập nhật thành công',
+      ai_name: config.ai.name
+    });
+
+  } catch (error) {
+    console.error('Update admin config error:', error);
+    res.status(500).json({ error: 'Không thể cập nhật config' });
+  }
+});
+
+// ============ KNOWLEDGE LINKS ADMIN APIs ============
+
+// Get all knowledge links with detailed info
+app.get('/api/admin/knowledge-links', authenticateAdmin, async (req, res) => {
+  try {
+    const config = await loadConfigFromFile();
+    if (!config?.knowledge_links) {
+      return res.json({
+        success: true,
+        enabled: false,
+        links: [],
+        cache_info: { total_cached: 0 }
+      });
+    }
+
+    // Get cache info for each link
+    const linksWithCache = config.knowledge_links.links.map(link => {
+      const cacheKey = `${link.id}_${link.url}`;
+      const cached = knowledgeCache.get(cacheKey);
+      
+      return {
+        ...link,
+        cache_status: cached ? {
+          cached: true,
+          timestamp: cached.timestamp,
+          age_hours: Math.round((Date.now() - cached.timestamp) / (1000 * 60 * 60) * 100) / 100,
+          content_length: cached.content?.length || 0
+        } : {
+          cached: false
+        }
+      };
+    });
+
+    res.json({
+      success: true,
+      enabled: config.knowledge_links.enabled,
+      auto_fetch: config.knowledge_links.auto_fetch,
+      cache_duration_hours: config.knowledge_links.cache_duration_hours,
+      links: linksWithCache,
+      cache_info: {
+        total_cached: knowledgeCache.size
+      }
+    });
+
+  } catch (error) {
+    console.error('Get admin knowledge links error:', error);
+    res.status(500).json({ error: 'Không thể lấy knowledge links' });
+  }
+});
+
+// Add new knowledge link
+app.post('/api/admin/knowledge-links', authenticateAdmin, async (req, res) => {
+  try {
+    const linkData = req.body;
+
+    if (!linkData.title || !linkData.url) {
+      return res.status(400).json({ error: 'Title và URL là bắt buộc' });
+    }
+
+    const config = await loadConfigFromFile();
+    if (!config) {
+      return res.status(500).json({ error: 'Không thể load config' });
+    }
+
+    // Initialize knowledge_links if not exists
+    if (!config.knowledge_links) {
+      config.knowledge_links = {
+        enabled: true,
+        auto_fetch: true,
+        cache_duration_hours: 24,
+        links: []
+      };
+    }
+
+    // Generate unique ID
+    const newLink = {
+      id: linkData.id || `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      title: linkData.title,
+      url: linkData.url,
+      type: linkData.type || 'web',
+      category: linkData.category || 'general',
+      description: linkData.description || '',
+      priority: linkData.priority || 'medium',
+      active: linkData.active !== false // Default to true
+    };
+
+    // Check for duplicate ID
+    const existingIndex = config.knowledge_links.links.findIndex(link => link.id === newLink.id);
+    if (existingIndex >= 0) {
+      return res.status(400).json({ error: 'Link ID đã tồn tại' });
+    }
+
+    // Add new link
+    config.knowledge_links.links.push(newLink);
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Knowledge link đã được thêm',
+      link: newLink
+    });
+
+  } catch (error) {
+    console.error('Add knowledge link error:', error);
+    res.status(500).json({ error: 'Không thể thêm knowledge link' });
+  }
+});
+
+// Update knowledge link
+app.put('/api/admin/knowledge-links/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const linkId = req.params.id;
+    const updateData = req.body;
+
+    const config = await loadConfigFromFile();
+    if (!config?.knowledge_links?.links) {
+      return res.status(404).json({ error: 'Không tìm thấy knowledge links' });
+    }
+
+    const linkIndex = config.knowledge_links.links.findIndex(link => link.id === linkId);
+    if (linkIndex === -1) {
+      return res.status(404).json({ error: 'Không tìm thấy knowledge link' });
+    }
+
+    // Update link
+    config.knowledge_links.links[linkIndex] = {
+      ...config.knowledge_links.links[linkIndex],
+      ...updateData,
+      id: linkId // Prevent ID change
+    };
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Clear cache for this link if URL changed
+    if (updateData.url) {
+      const oldCacheKey = `${linkId}_${config.knowledge_links.links[linkIndex].url}`;
+      const newCacheKey = `${linkId}_${updateData.url}`;
+      knowledgeCache.delete(oldCacheKey);
+      knowledgeCache.delete(newCacheKey);
+    }
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Knowledge link đã được cập nhật',
+      link: config.knowledge_links.links[linkIndex]
+    });
+
+  } catch (error) {
+    console.error('Update knowledge link error:', error);
+    res.status(500).json({ error: 'Không thể cập nhật knowledge link' });
+  }
+});
+
+// Delete knowledge link
+app.delete('/api/admin/knowledge-links/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const linkId = req.params.id;
+
+    const config = await loadConfigFromFile();
+    if (!config?.knowledge_links?.links) {
+      return res.status(404).json({ error: 'Không tìm thấy knowledge links' });
+    }
+
+    const linkIndex = config.knowledge_links.links.findIndex(link => link.id === linkId);
+    if (linkIndex === -1) {
+      return res.status(404).json({ error: 'Không tìm thấy knowledge link' });
+    }
+
+    // Remove link
+    const deletedLink = config.knowledge_links.links.splice(linkIndex, 1)[0];
+
+    // Save config
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    // Clear cache for this link
+    const cacheKey = `${linkId}_${deletedLink.url}`;
+    knowledgeCache.delete(cacheKey);
+
+    // Update current config
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: 'Knowledge link đã được xóa',
+      deleted_link: deletedLink
+    });
+
+  } catch (error) {
+    console.error('Delete knowledge link error:', error);
+    res.status(500).json({ error: 'Không thể xóa knowledge link' });
+  }
+});
+
+// Test fetch content for admin
+app.post('/api/admin/knowledge-links/test', authenticateAdmin, async (req, res) => {
+  try {
+    const { url, type } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    const content = await fetchLinkContent(url, type || 'web');
+
+    res.json({
+      success: true,
+      url,
+      type: type || 'web',
+      content_length: content.length,
+      content_preview: content.substring(0, 1000) + (content.length > 1000 ? '...' : ''),
+      test_timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Test knowledge link error:', error);
+    res.status(500).json({ error: 'Không thể test knowledge link' });
+  }
+});
+
+// Toggle knowledge links system
+app.put('/api/admin/knowledge-links/toggle', authenticateAdmin, async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    const config = await loadConfigFromFile();
+    if (!config) {
+      return res.status(500).json({ error: 'Không thể load config' });
+    }
+
+    if (!config.knowledge_links) {
+      config.knowledge_links = {
+        enabled: true,
+        auto_fetch: true,
+        cache_duration_hours: 24,
+        links: []
+      };
+    }
+
+    config.knowledge_links.enabled = enabled !== false;
+
+    const saved = await saveConfigToFile(config);
+    if (!saved) {
+      return res.status(500).json({ error: 'Không thể lưu config' });
+    }
+
+    currentConfig = config;
+
+    res.json({
+      success: true,
+      message: `Knowledge links đã được ${enabled ? 'bật' : 'tắt'}`,
+      enabled: config.knowledge_links.enabled
+    });
+
+  } catch (error) {
+    console.error('Toggle knowledge links error:', error);
+    res.status(500).json({ error: 'Không thể toggle knowledge links' });
+  }
 });
 
 // Start server

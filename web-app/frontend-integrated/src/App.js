@@ -3,6 +3,8 @@ import './App.css';
 import config from './config.json';
 import Avatar from './Avatar';
 import KnowledgeLinks from './KnowledgeLinks';
+import AdminLogin from './AdminLogin';
+import AdminDashboard from './AdminDashboard';
 
 // Backend API URL
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -13,6 +15,8 @@ const AuthContext = React.createContext();
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+
+
 
   // Send config to backend on app load
   useEffect(() => {
@@ -439,8 +443,6 @@ const ChatPage = () => {
           <div ref={messagesEndRef} />
         </div>
 
-
-
         <div 
           className={`chat-input-area ${dragOver ? 'drag-over' : ''}`}
           onDragOver={handleDragOver}
@@ -564,6 +566,75 @@ const ChatPage = () => {
 
 // Main App
 const App = () => {
+  // Admin state management
+  const [isAdminMode, setIsAdminMode] = useState(false);
+  const [adminInfo, setAdminInfo] = useState(null);
+  const [adminToken, setAdminToken] = useState(null);
+
+  useEffect(() => {
+    // Check for admin session
+    const savedAdminToken = localStorage.getItem('adminToken');
+    const savedAdminInfo = localStorage.getItem('adminInfo');
+    
+    if (savedAdminToken && savedAdminInfo) {
+      try {
+        const parsedAdminInfo = JSON.parse(savedAdminInfo);
+        setAdminToken(savedAdminToken);
+        setAdminInfo(parsedAdminInfo);
+        
+        // Check if current URL is admin route
+        if (window.location.pathname === '/admin') {
+          setIsAdminMode(true);
+        }
+      } catch (error) {
+        console.error('Invalid admin session data');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminInfo');
+      }
+    }
+
+    // Handle admin route navigation
+    if (window.location.pathname === '/admin') {
+      setIsAdminMode(true);
+    }
+  }, []);
+
+  // Handle admin login success
+  const handleAdminLoginSuccess = (adminData, token) => {
+    setAdminInfo(adminData);
+    setAdminToken(token);
+    setIsAdminMode(true);
+    
+    // Update URL to /admin without page reload
+    window.history.pushState({}, '', '/admin');
+  };
+
+  // Handle admin logout
+  const handleAdminLogout = () => {
+    setAdminInfo(null);
+    setAdminToken(null);
+    setIsAdminMode(false);
+    
+    // Redirect to main app
+    window.history.pushState({}, '', '/');
+  };
+
+  // Admin mode rendering
+  if (isAdminMode) {
+    if (!adminInfo || !adminToken) {
+      return <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />;
+    }
+    
+    return (
+      <AdminDashboard 
+        adminInfo={adminInfo}
+        adminToken={adminToken}
+        onLogout={handleAdminLogout}
+      />
+    );
+  }
+
+  // Regular app rendering
   return (
     <AuthProvider>
       <div className="App">

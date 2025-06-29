@@ -3,7 +3,7 @@
     "name": "Peter",
     "fullName": "Peter piu piu piu",
     "avatar": "./avatar.png",
-    "avatarFallback": "🤖",
+    "avatarFallback": "./avatar.png",
     "description": "Chuyên gia AI về CGI và chỉnh sửa ảnh",
     "subtitle": "Đăng nhập bằng tài khoản hệ thống chính",
     "welcomeTitle": "👋 Chào mừng đến với Peter piu piu piu!",
