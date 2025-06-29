@@ -234,6 +234,12 @@ body {
   font-size: 0.9em;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .logout-button {
   background: transparent;
   color: #a0a0a0;
@@ -250,6 +256,233 @@ body {
   background: #404040;
   color: #ffffff;
   border-color: #666666;
+}
+
+/* Knowledge Links Widget */
+.knowledge-links-widget {
+  position: relative;
+}
+
+.knowledge-toggle-btn {
+  background: rgba(16, 163, 127, 0.1);
+  color: #10a37f;
+  border: 1px solid rgba(16, 163, 127, 0.3);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8em;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.knowledge-toggle-btn:hover {
+  background: rgba(16, 163, 127, 0.2);
+  border-color: #10a37f;
+}
+
+.knowledge-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 400px;
+  background: #2d2d2d;
+  border: 1px solid #555555;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.knowledge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #444444;
+}
+
+.knowledge-header h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.1em;
+}
+
+.cache-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8em;
+  color: #a0a0a0;
+}
+
+.clear-cache-btn {
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clear-cache-btn:hover {
+  background: #ff6666;
+}
+
+.knowledge-links-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.knowledge-link {
+  background: #404040;
+  border: 1px solid #555555;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.knowledge-link.active {
+  border-color: #10a37f;
+  background: rgba(16, 163, 127, 0.05);
+}
+
+.knowledge-link.inactive {
+  opacity: 0.6;
+}
+
+.link-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.link-info {
+  flex: 1;
+}
+
+.link-info strong {
+  color: #ffffff;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.priority, .category {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7em;
+  margin-right: 6px;
+  margin-top: 4px;
+}
+
+.priority.high {
+  background: #ff4444;
+  color: white;
+}
+
+.priority.medium {
+  background: #ffaa44;
+  color: black;
+}
+
+.priority.low {
+  background: #44ff44;
+  color: black;
+}
+
+.category {
+  background: #666666;
+  color: white;
+}
+
+.link-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.2s ease;
+}
+
+.test-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.test-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.status-indicator {
+  font-size: 0.8em;
+}
+
+.link-details p {
+  color: #c0c0c0;
+  font-size: 0.85em;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.link-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.link-type {
+  background: #555555;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7em;
+  align-self: flex-start;
+}
+
+.link-url {
+  color: #10a37f;
+  font-size: 0.75em;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.link-url:hover {
+  text-decoration: underline;
+}
+
+.knowledge-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #444444;
+  font-size: 0.8em;
+  color: #888888;
+}
+
+.knowledge-footer p {
+  margin: 4px 0;
+}
+
+.knowledge-footer code {
+  background: #555555;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
 }
 
 .chat-container {
@@ -406,6 +639,17 @@ body {
     flex-direction: column;
     gap: 10px;
     text-align: center;
+  }
+  
+  .header-controls {
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .knowledge-panel {
+    width: calc(100vw - 40px);
+    left: -200px;
+    right: auto;
   }
   
   .chat-container {

@@ -50,7 +50,7 @@ const generateMachineId = (userAgent, ip) => {
 };
 
 // Dynamic system prompt generation from config
-const generateSystemPrompt = (config) => {
+const generateSystemPrompt = async (config, includeKnowledgeLinks = true) => {
   if (!config || !config.personality || !config.expertise) {
     // Fallback to original prompt if config missing
     return `Bạn là Peter, chuyên gia CGI và chỉnh sửa ảnh chuyên nghiệp với nhiều năm kinh nghiệm.
@@ -107,11 +107,101 @@ ${behavior_patterns.teaching_style.map(style => `• ${style}`).join('\n')}
 
 Luôn nhớ: Bạn là expert với deep knowledge, friendly approach, và focus vào practical actionable advice.`;
 
+  // Add knowledge links content if enabled
+  if (includeKnowledgeLinks) {
+    try {
+      const knowledgeContent = await processKnowledgeLinks(config);
+      if (knowledgeContent.trim()) {
+        prompt += knowledgeContent;
+      }
+    } catch (error) {
+      console.error('Error processing knowledge links:', error);
+    }
+  }
+
   return prompt;
 };
 
 // Store current config (will be updated from frontend)
 let currentConfig = null;
+let knowledgeCache = new Map(); // Cache for fetched link content
+
+// Knowledge links processing
+const fetchLinkContent = async (url, type) => {
+  try {
+    console.log(`🔗 Fetching content from: ${url}`);
+    
+    const response = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; PeterCGI-Assistant/1.0)'
+      }
+    });
+
+    let content = '';
+    
+    if (type === 'pdf') {
+      // For PDFs, we'd need additional processing (pdf-parse library)
+      content = `PDF Content from ${url} - [Processing required]`;
+    } else if (type === 'web' || type === 'documentation') {
+      // Extract text from HTML (basic implementation)
+      const htmlContent = response.data;
+      // Remove HTML tags and get clean text
+      content = htmlContent
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 5000); // Limit content length
+    }
+    
+    return content;
+  } catch (error) {
+    console.error(`❌ Failed to fetch ${url}:`, error.message);
+    return `[Content unavailable from ${url}]`;
+  }
+};
+
+const processKnowledgeLinks = async (config) => {
+  if (!config?.knowledge_links?.enabled || !config.knowledge_links.links) {
+    return '';
+  }
+
+  const { links, cache_duration_hours = 24 } = config.knowledge_links;
+  const activeLinks = links.filter(link => link.active);
+  
+  let knowledgeContent = '\n## KNOWLEDGE BASE REFERENCES:\n';
+  
+  for (const link of activeLinks) {
+    const cacheKey = `${link.id}_${link.url}`;
+    const cached = knowledgeCache.get(cacheKey);
+    
+    // Check if cache is still valid
+    if (cached && (Date.now() - cached.timestamp) < (cache_duration_hours * 60 * 60 * 1000)) {
+      knowledgeContent += `\n### ${link.title}:\n${cached.content}\n`;
+      continue;
+    }
+    
+    // Fetch fresh content
+    const content = await fetchLinkContent(link.url, link.type);
+    
+    // Cache the content
+    knowledgeCache.set(cacheKey, {
+      content,
+      timestamp: Date.now(),
+      metadata: {
+        title: link.title,
+        category: link.category,
+        priority: link.priority
+      }
+    });
+    
+    knowledgeContent += `\n### ${link.title} (${link.category}):\n${content}\n`;
+  }
+  
+  return knowledgeContent;
+};
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -165,8 +255,84 @@ app.get('/api/config/current', (req, res) => {
   res.json({
     success: true,
     hasConfig: !!currentConfig,
-    aiName: currentConfig?.ai?.name || 'Unknown'
+    aiName: currentConfig?.ai?.name || 'Unknown',
+    knowledgeLinksEnabled: currentConfig?.knowledge_links?.enabled || false,
+    activeLinksCount: currentConfig?.knowledge_links?.links?.filter(l => l.active)?.length || 0
   });
+});
+
+// Knowledge Links Management
+app.get('/api/knowledge/links', (req, res) => {
+  try {
+    if (!currentConfig?.knowledge_links) {
+      return res.json({
+        success: true,
+        links: [],
+        enabled: false
+      });
+    }
+
+    res.json({
+      success: true,
+      enabled: currentConfig.knowledge_links.enabled,
+      links: currentConfig.knowledge_links.links,
+      cache_info: {
+        total_cached: knowledgeCache.size,
+        cache_duration_hours: currentConfig.knowledge_links.cache_duration_hours
+      }
+    });
+
+  } catch (error) {
+    console.error('Get knowledge links error:', error);
+    res.status(500).json({ error: 'Failed to get knowledge links' });
+  }
+});
+
+// Test knowledge link content fetch
+app.post('/api/knowledge/test-link', async (req, res) => {
+  try {
+    const { url, type } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
+    console.log(`🧪 Testing link: ${url}`);
+    const content = await fetchLinkContent(url, type || 'web');
+
+    res.json({
+      success: true,
+      url,
+      type,
+      content_length: content.length,
+      content_preview: content.substring(0, 500) + (content.length > 500 ? '...' : ''),
+      full_content: content
+    });
+
+  } catch (error) {
+    console.error('Test link error:', error);
+    res.status(500).json({ error: 'Failed to test link' });
+  }
+});
+
+// Clear knowledge cache
+app.post('/api/knowledge/clear-cache', (req, res) => {
+  try {
+    const cacheSize = knowledgeCache.size;
+    knowledgeCache.clear();
+    
+    console.log(`🗑️ Cleared knowledge cache (${cacheSize} items)`);
+    
+    res.json({
+      success: true,
+      message: `Cleared ${cacheSize} cached items`,
+      cache_size: knowledgeCache.size
+    });
+
+  } catch (error) {
+    console.error('Clear cache error:', error);
+    res.status(500).json({ error: 'Failed to clear cache' });
+  }
 });
 
 // ============ EXTERNAL AUTH INTEGRATION ============
@@ -367,8 +533,8 @@ app.post('/api/chat/send', authenticateToken, async (req, res) => {
       conversation = convResult.rows[0];
     }
 
-    // Generate dynamic system prompt from config
-    const systemPrompt = generateSystemPrompt(currentConfig);
+    // Generate dynamic system prompt from config with knowledge links
+    const systemPrompt = await generateSystemPrompt(currentConfig);
     
     // Prepare messages for OpenAI with image support
     const apiMessages = [

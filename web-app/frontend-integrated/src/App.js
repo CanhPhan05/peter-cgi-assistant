@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import config from './config.json';
 import Avatar from './Avatar';
+import KnowledgeLinks from './KnowledgeLinks';
 
 // Backend API URL
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -383,9 +384,12 @@ const ChatPage = () => {
             <p>Xin chào <strong>{user?.name || user?.email}</strong>!</p>
           </div>
         </div>
-        <button onClick={logout} className="logout-button">
-          Đăng xuất
-        </button>
+        <div className="header-controls">
+          <KnowledgeLinks apiUrl={API_URL} />
+          <button onClick={logout} className="logout-button">
+            Đăng xuất
+          </button>
+        </div>
       </div>
 
       <div className="chat-container">
