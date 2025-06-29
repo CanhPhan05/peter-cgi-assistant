@@ -246,6 +246,13 @@ body {
   margin-bottom: 180px; /* Space for fixed bottom elements */
   height: calc(100% - 180px);
   scroll-behavior: smooth;
+  /* Hide scrollbar but keep functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.messages-container::-webkit-scrollbar {
+  display: none; /* WebKit browsers (Chrome, Safari, Edge) */
 }
 
 .welcome-message {
@@ -656,6 +663,41 @@ body {
   margin-left: 5px;
 }
 
+/* Compact Quick Actions - Show when images are attached */
+.compact-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 12px 0 8px 0;
+  padding: 0 10px;
+}
+
+.compact-action-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+}
+
+.compact-action-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.compact-action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Message Images in Chat - ChatGPT Style */
 .message-images {
   margin-bottom: 10px;
@@ -714,6 +756,16 @@ body {
   
   .input-row {
     gap: 8px;
+  }
+  
+  .compact-quick-actions {
+    padding: 0 5px;
+    gap: 6px;
+  }
+  
+  .compact-action-button {
+    font-size: 11px;
+    padding: 5px 10px;
   }
   
   .message-images {
