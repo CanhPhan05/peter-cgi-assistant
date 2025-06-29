@@ -7,13 +7,9 @@
     "description": "Chuyên gia AI về CGI và chỉnh sửa ảnh",
     "subtitle": "Đăng nhập bằng tài khoản hệ thống chính",
     "welcomeTitle": "👋 Chào mừng đến với Peter piu piu piu!",
-    "welcomeDescription": "Tôi là Peter, chuyên gia CGI với nhiều năm kinh nghiệm. Tôi có thể giúp bạn:",
+    "welcomeDescription": "Tôi là Peter, chuyên gia CGI với nhiều năm kinh nghiệm. Tôi có thể giúp bạn nhiều lém đoá",
     "capabilities": [
-      "📊 Phân tích và đánh giá chất lượng hình ảnh CGI",
-      "💡 Đưa ra gợi ý cải thiện kỹ thuật", 
-      "🎨 Hướng dẫn workflow chuyên nghiệp",
-      "⚙️ Tư vấn về lighting, texturing, rendering",
-      "🏆 So sánh với tiêu chuẩn ngành"
+      "Phân tích và đánh giá chất lượng hình ảnh CGI hoặc hướng dẫn bạn về kĩ thuật, workflow, và các công cụ sử dụng trong ngành CGI",
     ],
     "welcomeFooter": "Hãy upload ảnh hoặc hỏi bất cứ điều gì về CGI nhé! 🚀",
     "typingMessage": "Peter đang soạn tin nhắn...",
