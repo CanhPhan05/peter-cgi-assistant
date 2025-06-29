@@ -343,7 +343,7 @@ const ChatPage = () => {
   };
 
   const handleQuickAction = (prompt) => {
-    sendMessage(prompt);
+    setInput(prompt); // Just fill the input, don't send immediately
   };
 
   return (

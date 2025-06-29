@@ -327,7 +327,7 @@ body {
 /* Quick Actions - Fixed Position */
 .quick-actions {
   position: fixed;
-  bottom: 100px; /* Above input area */
+  bottom: 120px; /* More space above input area */
   left: 50%;
   transform: translateX(-50%);
   max-width: 1160px; /* Slightly less than container for padding */
@@ -337,7 +337,7 @@ body {
   border-radius: 16px;
   padding: 20px;
   border: 1px solid #404040;
-  z-index: 100;
+  z-index: 90; /* Lower than input area */
 }
 
 .quick-actions-label {
@@ -486,10 +486,12 @@ body {
   60% { transform: translateY(-5px); }
 }
 
-/* Selected Images Preview - ChatGPT Style */
+/* Selected Images Preview - Limited Height */
 .selected-images {
   padding: 16px 20px 12px 20px;
   border-bottom: 1px solid #555555;
+  max-height: 150px; /* Limit height to not cover quick actions */
+  overflow-y: auto;
 }
 
 .selected-images-label {
@@ -501,8 +503,8 @@ body {
 
 .selected-images-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Smaller thumbnails */
+  gap: 10px;
 }
 
 .selected-image {
@@ -521,7 +523,7 @@ body {
 
 .selected-image img {
   width: 100%;
-  height: 80px;
+  height: 60px; /* Smaller height */
   object-fit: cover;
   display: block;
 }
@@ -684,7 +686,7 @@ body {
   }
   
   .quick-actions {
-    bottom: 90px;
+    bottom: 110px; /* More space on mobile */
     width: calc(100% - 40px);
     max-width: none;
     padding: 15px;
