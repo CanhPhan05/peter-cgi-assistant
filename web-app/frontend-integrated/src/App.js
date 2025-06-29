@@ -407,24 +407,7 @@ const ChatPage = () => {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Actions - Show above input only when no images */}
-        {selectedImages.length === 0 && (
-          <div className="quick-actions">
-            <div className="quick-actions-label">⚡ Quick Actions:</div>
-            <div className="quick-actions-buttons">
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleQuickAction(action.prompt)}
-                  className="quick-action-button"
-                  disabled={loading}
-                >
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+
 
         <div 
           className={`chat-input-area ${dragOver ? 'drag-over' : ''}`}
@@ -521,21 +504,19 @@ const ChatPage = () => {
             </div>
           </form>
 
-          {/* Compact Quick Actions - Show below input when images attached */}
-          {selectedImages.length > 0 && (
-            <div className="compact-quick-actions">
-              {quickActions.map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleQuickAction(action.prompt)}
-                  className="compact-action-button"
-                  disabled={loading}
-                >
-                  {action.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {/* Grok-style Quick Actions - Always show below input */}
+          <div className="grok-quick-actions">
+            {quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => handleQuickAction(action.prompt)}
+                className="grok-action-button"
+                disabled={loading}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
 
           <div className="upload-hints">
             💡 <strong>Đính kèm file:</strong> 
