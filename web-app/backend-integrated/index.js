@@ -49,8 +49,11 @@ const generateMachineId = (userAgent, ip) => {
   return crypto.createHash('sha256').update(combined).digest('hex');
 };
 
-// Peter's personality prompt
-const PETER_SYSTEM_PROMPT = `Bạn là Peter, chuyên gia CGI và chỉnh sửa ảnh chuyên nghiệp với nhiều năm kinh nghiệm.
+// Dynamic system prompt generation from config
+const generateSystemPrompt = (config) => {
+  if (!config || !config.personality || !config.expertise) {
+    // Fallback to original prompt if config missing
+    return `Bạn là Peter, chuyên gia CGI và chỉnh sửa ảnh chuyên nghiệp với nhiều năm kinh nghiệm.
 
 TÍNH CÁCH: Thân thiện, nhiệt tình, giải thích dễ hiểu, sử dụng emoji phù hợp, trả lời bằng tiếng Việt tự nhiên.
 
@@ -59,6 +62,56 @@ CHUYÊN MÔN: CGI, Photo manipulation, Color grading, Lighting, Texture design, 
 CÁCH TRẢ LỜI: Phân tích chi tiết và chuyên nghiệp, đưa ra gợi ý cụ thể có thể thực hiện, giải thích lý do, hướng dẫn từng bước, khuyến khích thử nghiệm sáng tạo.
 
 QUALITY REFERENCES: Tham khảo standards từ top studios như DBOX, Binyan Studios, The Boundary, và các CGI houses hàng đầu thế giới.`;
+  }
+
+  const { ai, personality, expertise, knowledge_sources, behavior_patterns } = config;
+
+  let prompt = `Bạn là ${ai.name}, ${personality.role} với ${personality.experience}.
+
+## TÍNH CÁCH & PHONG CÁCH GIAO TIẾP:
+${personality.characteristics.map(char => `• ${char}`).join('\n')}
+
+Phong cách: ${personality.communication_style.tone}
+Cách tiếp cận: ${personality.communication_style.approach}
+Ngôn ngữ: ${personality.communication_style.language}
+Format: ${personality.communication_style.format}
+
+## CHUYÊN MÔN CORE:
+${expertise.primary_skills.map(skill => `• ${skill}`).join('\n')}
+
+## LĨNH VỰC CHUYÊN BIỆT:
+${expertise.specialized_areas.map(area => `• ${area}`).join('\n')}
+
+## TOOLS & SOFTWARE MASTERY:
+• Modeling: ${expertise.software_proficiency.modeling.join(', ')}
+• Texturing: ${expertise.software_proficiency.texturing.join(', ')}
+• Rendering: ${expertise.software_proficiency.rendering.join(', ')}
+• Compositing: ${expertise.software_proficiency.compositing.join(', ')}
+• Real-time: ${expertise.software_proficiency.realtime.join(', ')}
+• AI Tools: ${expertise.software_proficiency.ai_tools.join(', ')}
+
+## KNOWLEDGE BASE & REFERENCES:
+Industry Standards: ${knowledge_sources.industry_standards.join(', ')}
+Learning Resources: ${knowledge_sources.learning_resources.join(', ')}
+Industry News: ${knowledge_sources.industry_news.join(', ')}
+Research Papers: ${knowledge_sources.research_papers.join(', ')}
+
+## PHƯƠNG PHÁP PHÂN TÍCH:
+${behavior_patterns.analysis_approach.map(approach => `• ${approach}`).join('\n')}
+
+## CẤU TRÚC TRẢ LỜI:
+${behavior_patterns.response_structure.map(structure => `• ${structure}`).join('\n')}
+
+## PHONG CÁCH DẠY HỌC:
+${behavior_patterns.teaching_style.map(style => `• ${style}`).join('\n')}
+
+Luôn nhớ: Bạn là expert với deep knowledge, friendly approach, và focus vào practical actionable advice.`;
+
+  return prompt;
+};
+
+// Store current config (will be updated from frontend)
+let currentConfig = null;
 
 // Auth middleware
 const authenticateToken = (req, res, next) => {
@@ -75,6 +128,46 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
+
+// ============ CONFIG MANAGEMENT ============
+
+// Update config from frontend
+app.post('/api/config/update', (req, res) => {
+  try {
+    const { config } = req.body;
+    
+    if (!config) {
+      return res.status(400).json({ error: 'Config is required' });
+    }
+
+    // Validate config structure
+    if (!config.ai || !config.personality || !config.expertise) {
+      return res.status(400).json({ error: 'Invalid config structure' });
+    }
+
+    currentConfig = config;
+    console.log(`🔧 Config updated for AI: ${config.ai.name}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Config updated successfully',
+      ai_name: config.ai.name 
+    });
+
+  } catch (error) {
+    console.error('Config update error:', error);
+    res.status(500).json({ error: 'Failed to update config' });
+  }
+});
+
+// Get current config (optional - for debugging)
+app.get('/api/config/current', (req, res) => {
+  res.json({
+    success: true,
+    hasConfig: !!currentConfig,
+    aiName: currentConfig?.ai?.name || 'Unknown'
+  });
+});
 
 // ============ EXTERNAL AUTH INTEGRATION ============
 
@@ -274,9 +367,12 @@ app.post('/api/chat/send', authenticateToken, async (req, res) => {
       conversation = convResult.rows[0];
     }
 
+    // Generate dynamic system prompt from config
+    const systemPrompt = generateSystemPrompt(currentConfig);
+    
     // Prepare messages for OpenAI with image support
     const apiMessages = [
-      { role: 'system', content: PETER_SYSTEM_PROMPT }
+      { role: 'system', content: systemPrompt }
     ];
 
     // Convert messages to OpenAI format with vision support

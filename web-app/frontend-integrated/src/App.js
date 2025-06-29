@@ -13,6 +13,24 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Send config to backend on app load
+  useEffect(() => {
+    const sendConfigToBackend = async () => {
+      try {
+        await fetch(`${API_URL}/api/config/update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config })
+        });
+        console.log(`🔧 Config sent to backend for ${config.ai.name}`);
+      } catch (error) {
+        console.error('Failed to send config to backend:', error);
+      }
+    };
+
+    sendConfigToBackend();
+  }, []);
+
   useEffect(() => {
     // Check for saved token on app load
     const token = localStorage.getItem('token');
