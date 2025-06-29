@@ -474,15 +474,12 @@ body {
 
 /* Grok-style Compact Image Preview */
 .selected-images {
-  padding: 12px 16px 8px 16px;
+  padding: 10px 16px 8px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .selected-images-label {
-  font-weight: 500;
-  color: #a0a0a0;
-  margin-bottom: 8px;
-  font-size: 0.8em;
+  display: none; /* Hide the label for cleaner Grok-style look */
 }
 
 .selected-images-grid {
@@ -529,23 +526,25 @@ body {
 
 .remove-image-btn {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  background: #e53e3e;
+  top: -4px;
+  right: -4px;
+  background: #1a1a1a;
   color: white;
-  border: none;
+  border: 2px solid #fff;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   cursor: pointer;
   font-size: 12px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
   opacity: 0; /* Hidden by default */
   transform: scale(0.8);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
 }
 
 /* Show remove button on hover */
@@ -555,7 +554,8 @@ body {
 }
 
 .remove-image-btn:hover {
-  background: #dc2626;
+  background: #333333;
+  border-color: #ff4444;
   transform: scale(1.1);
 }
 
@@ -706,7 +706,7 @@ body {
   }
   
   .selected-images {
-    padding: 10px 12px 6px 12px;
+    padding: 8px 12px 6px 12px;
   }
   
   .selected-images-grid {
@@ -736,7 +736,7 @@ body {
 
 @media (max-width: 480px) {
   .selected-images {
-    padding: 8px 10px 6px 10px;
+    padding: 6px 10px 6px 10px;
   }
   
   .selected-images-grid {
@@ -749,11 +749,12 @@ body {
   }
   
   .remove-image-btn {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     font-size: 10px;
-    top: -5px;
-    right: -5px;
+    top: -3px;
+    right: -3px;
+    border-width: 1.5px;
   }
   
   .upload-hints {
