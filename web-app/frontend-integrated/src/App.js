@@ -153,6 +153,9 @@ const ChatPage = () => {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [conversationId, setConversationId] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   const quickActions = [
     { label: '📊 Phân tích ảnh', prompt: 'Hãy phân tích chi tiết hình ảnh này về mặt kỹ thuật CGI và đưa ra nhận xét chuyên môn.' },
@@ -163,13 +166,103 @@ const ChatPage = () => {
     { label: '🌟 Tiêu chuẩn ngành', prompt: 'So sánh với standards của các studio CGI hàng đầu thế giới.' }
   ];
 
-  const sendMessage = async (messageContent) => {
-    if (!messageContent.trim()) return;
+  // Handle file upload
+  const handleFileUpload = (files) => {
+    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+    
+    const newImages = imageFiles.map(file => ({
+      file,
+      url: URL.createObjectURL(file),
+      name: file.name
+    }));
+    
+    setSelectedImages(prev => [...prev, ...newImages]);
+  };
 
-    const newMessage = { role: 'user', content: messageContent };
+  // Handle drag and drop
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = e.dataTransfer.files;
+    handleFileUpload(files);
+  };
+
+  // Handle paste from clipboard
+  const handlePaste = (e) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const blob = items[i].getAsFile();
+        const newImage = {
+          file: blob,
+          url: URL.createObjectURL(blob),
+          name: `pasted-image-${Date.now()}.png`
+        };
+        setSelectedImages(prev => [...prev, newImage]);
+        break;
+      }
+    }
+  };
+
+  // Remove selected image
+  const removeImage = (index) => {
+    setSelectedImages(prev => {
+      const newImages = [...prev];
+      URL.revokeObjectURL(newImages[index].url);
+      newImages.splice(index, 1);
+      return newImages;
+    });
+  };
+
+  // Upload images to backend
+  const uploadImages = async (images) => {
+    if (!images.length) return [];
+    
+    const formData = new FormData();
+    images.forEach(img => formData.append('images', img.file));
+    
+    const token = localStorage.getItem('token');
+    const response = await fetch(`${API_URL}/api/images/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+    
+    const data = await response.json();
+    return data.success ? data.images : [];
+  };
+
+  const sendMessage = async (messageContent = input) => {
+    if (!messageContent.trim() && selectedImages.length === 0) return;
+
+    // Upload images first if any
+    let imageUrls = [];  
+    if (selectedImages.length > 0) {
+      imageUrls = await uploadImages(selectedImages);
+    }
+
+    const newMessage = { 
+      role: 'user', 
+      content: messageContent,
+      images: imageUrls 
+    };
     const updatedMessages = [...messages, newMessage];
     setMessages(updatedMessages);
     setInput('');
+    setSelectedImages([]);
     setLoading(true);
 
     try {
@@ -207,6 +300,18 @@ const ChatPage = () => {
 
     setLoading(false);
   };
+
+  // Add paste event listener
+  React.useEffect(() => {
+    const handlePasteEvent = (e) => {
+      // Only handle paste if we're not in an input field that should handle its own paste
+      if (e.target.classList.contains('message-input')) return;
+      handlePaste(e);
+    };
+    
+    document.addEventListener('paste', handlePasteEvent);
+    return () => document.removeEventListener('paste', handlePasteEvent);
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -249,7 +354,19 @@ const ChatPage = () => {
           {messages.map((message, index) => (
             <div key={index} className={`message ${message.role}`}>
               <div className="message-content">
-                {message.content}
+                {message.images && message.images.length > 0 && (
+                  <div className="message-images">
+                    {message.images.map((img, imgIndex) => (
+                      <img 
+                        key={imgIndex} 
+                        src={`${API_URL}${img.url}`} 
+                        alt={`Uploaded ${imgIndex + 1}`}
+                        className="message-image"
+                      />
+                    ))}
+                  </div>
+                )}
+                <div>{message.content}</div>
               </div>
             </div>
           ))}
@@ -279,19 +396,87 @@ const ChatPage = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="message-form">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Hỏi Peter về CGI, upload ảnh để phân tích..."
-            disabled={loading}
-            className="message-input"
-          />
-          <button type="submit" disabled={loading || !input.trim()} className="send-button">
-            📤 Gửi
-          </button>
-        </form>
+        <div 
+          className={`chat-input-area ${dragOver ? 'drag-over' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {/* Selected Images Preview */}
+          {selectedImages.length > 0 && (
+            <div className="selected-images">
+              <div className="selected-images-label">🖼️ Ảnh đã chọn ({selectedImages.length}):</div>
+              <div className="selected-images-grid">
+                {selectedImages.map((img, index) => (
+                  <div key={index} className="selected-image">
+                    <img src={img.url} alt={img.name} />
+                    <button 
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="remove-image-btn"
+                    >
+                      ❌
+                    </button>
+                    <div className="image-name">{img.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Drag & Drop Overlay */}
+          {dragOver && (
+            <div className="drag-overlay">
+              <div className="drag-message">
+                📂 Thả ảnh vào đây để upload!
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="message-form">
+            <div className="input-row">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="💬 Hỏi Peter về CGI... hoặc Ctrl+V để paste ảnh"
+                disabled={loading}
+                className="message-input"
+              />
+              
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={(e) => handleFileUpload(e.target.files)}
+                accept="image/*"
+                multiple
+                style={{ display: 'none' }}
+              />
+              
+              <button 
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="upload-button"
+                disabled={loading}
+              >
+                📎 Upload
+              </button>
+              
+              <button 
+                type="submit" 
+                disabled={loading || (!input.trim() && selectedImages.length === 0)} 
+                className="send-button"
+              >
+                📤 Gửi
+              </button>
+            </div>
+          </form>
+
+          <div className="upload-hints">
+            💡 <strong>Cách upload ảnh:</strong> 
+            <span>Kéo thả ảnh • Ctrl+V paste ảnh • Click nút Upload</span>
+          </div>
+        </div>
       </div>
     </div>
   );
