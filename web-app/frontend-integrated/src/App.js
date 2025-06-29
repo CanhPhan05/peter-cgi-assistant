@@ -435,13 +435,24 @@ const ChatPage = () => {
 
           <form onSubmit={handleSubmit} className="message-form">
             <div className="input-row">
-              <input
-                type="text"
+              <textarea
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="💬 Hỏi Peter về CGI... hoặc Ctrl+V để paste ảnh"
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  // Auto-expand textarea
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+                }}
+                placeholder="Hỏi Peter về CGI... hoặc Ctrl+V để paste ảnh"
                 disabled={loading}
                 className="message-input"
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
               />
               
               <input
@@ -458,16 +469,25 @@ const ChatPage = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className="upload-button"
                 disabled={loading}
+                title="Upload ảnh"
               >
-                📎 Upload
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7,10 12,15 17,10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
               </button>
               
               <button 
                 type="submit" 
                 disabled={loading || (!input.trim() && selectedImages.length === 0)} 
                 className="send-button"
+                title="Gửi tin nhắn"
               >
-                📤 Gửi
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22,2 15,22 11,13 2,9 22,2"/>
+                </svg>
               </button>
             </div>
           </form>
