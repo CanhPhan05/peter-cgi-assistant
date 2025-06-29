@@ -234,14 +234,18 @@ body {
   margin: 0 auto;
   width: 100%;
   padding: 20px;
+  height: calc(100vh - 80px); /* Fixed height minus header */
+  position: relative;
 }
 
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 20px;
-  padding: 20px;
+  padding: 20px 20px 40px 20px; /* Extra bottom padding */
   background: transparent;
+  margin-bottom: 180px; /* Space for fixed bottom elements */
+  height: calc(100% - 180px);
+  scroll-behavior: smooth;
 }
 
 .welcome-message {
@@ -320,11 +324,20 @@ body {
   display: inline-block;
 }
 
-/* Quick Actions - ChatGPT Style */
+/* Quick Actions - Fixed Position */
 .quick-actions {
-  margin-bottom: 20px;
-  background: transparent;
-  padding: 20px 0;
+  position: fixed;
+  bottom: 100px; /* Above input area */
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 1160px; /* Slightly less than container for padding */
+  width: calc(100% - 80px);
+  background: rgba(33, 33, 33, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #404040;
+  z-index: 100;
 }
 
 .quick-actions-label {
@@ -423,15 +436,21 @@ body {
   }
 }
 
-/* Chat Input Area - ChatGPT Style */
+/* Chat Input Area - Fixed Position */
 .chat-input-area {
-  position: relative;
-  background: #2d2d2d;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(45, 45, 45, 0.95);
+  backdrop-filter: blur(10px);
   border: 1px solid #555555;
   border-radius: 24px;
   transition: all 0.3s ease;
-  width: 100%;
-  margin: 0 auto;
+  max-width: 1160px; /* Slightly less than container for padding */
+  width: calc(100% - 80px);
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .chat-input-area.drag-over {
@@ -658,8 +677,30 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* Mobile Responsive - ChatGPT Style */
+/* Mobile Responsive - Fixed Layout */
 @media (max-width: 768px) {
+  .chat-container {
+    padding: 10px;
+  }
+  
+  .quick-actions {
+    bottom: 90px;
+    width: calc(100% - 40px);
+    max-width: none;
+    padding: 15px;
+  }
+  
+  .quick-actions-buttons {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .chat-input-area {
+    bottom: 15px;
+    width: calc(100% - 40px);
+    max-width: none;
+  }
+  
   .selected-images-grid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 10px;

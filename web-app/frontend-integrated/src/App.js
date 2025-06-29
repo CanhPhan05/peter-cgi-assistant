@@ -156,6 +156,7 @@ const ChatPage = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = React.useRef(null);
+  const messagesEndRef = React.useRef(null);
 
   const quickActions = [
     { label: '📊 Phân tích ảnh', prompt: 'Hãy phân tích chi tiết hình ảnh này về mặt kỹ thuật CGI và đưa ra nhận xét chuyên môn.' },
@@ -301,6 +302,16 @@ const ChatPage = () => {
     setLoading(false);
   };
 
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Auto scroll when messages change
+  React.useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   // Add paste event listener
   React.useEffect(() => {
     const handlePasteEvent = (e) => {
@@ -391,6 +402,9 @@ const ChatPage = () => {
               </div>
             </div>
           )}
+          
+          {/* Scroll anchor */}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="quick-actions">
