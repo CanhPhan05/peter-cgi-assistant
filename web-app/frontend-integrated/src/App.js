@@ -389,7 +389,8 @@ const ChatPage = () => {
           </div>
         </div>
         <div className="header-controls">
-          <KnowledgeLinks apiUrl={API_URL} />
+          {/* Hide Knowledge Links widget for regular users */}
+          {/* <KnowledgeLinks apiUrl={API_URL} /> */}
           <button onClick={logout} className="logout-button">
             Đăng xuất
           </button>
