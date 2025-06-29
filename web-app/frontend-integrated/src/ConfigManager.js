@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
+import Avatar from './Avatar';
 
 const ConfigManager = ({ adminToken, onStatsUpdate }) => {
   const [config, setConfig] = useState(null);
@@ -8,6 +9,7 @@ const ConfigManager = ({ adminToken, onStatsUpdate }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [activeSection, setActiveSection] = useState('basic');
+  const avatarInputRef = useRef(null);
 
   useEffect(() => {
     loadConfig();
@@ -123,6 +125,68 @@ const ConfigManager = ({ adminToken, onStatsUpdate }) => {
     setConfig(newConfig);
   };
 
+  // Avatar upload handling
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Vui lòng chọn file ảnh (PNG, JPG, GIF)');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Kích thước ảnh quá lớn. Vui lòng chọn ảnh dưới 2MB');
+      return;
+    }
+
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64Data = e.target.result;
+        setConfig(prev => ({
+          ...prev,
+          ai: {
+            ...prev.ai,
+            avatar: base64Data
+          }
+        }));
+        setMessage('✅ Avatar đã được tải lên. Nhớ Save để lưu thay đổi!');
+        setTimeout(() => setMessage(''), 3000);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      setError('Lỗi khi tải ảnh lên');
+    }
+  };
+
+  const resetToDefaultAvatar = () => {
+    setConfig(prev => ({
+      ...prev,
+      ai: {
+        ...prev.ai,
+        avatar: './avatar.png'
+      }
+    }));
+    setMessage('✅ Đã reset về avatar mặc định');
+    setTimeout(() => setMessage(''), 3000);
+  };
+
+  const resetToSampleAvatar = () => {
+    setConfig(prev => ({
+      ...prev,
+      ai: {
+        ...prev.ai,
+        avatar: './sample-avatar.png'
+      }
+    }));
+    setMessage('✅ Đã chuyển sang avatar mẫu');
+    setTimeout(() => setMessage(''), 3000);
+  };
+
   if (loading) {
     return (
       <div className="config-manager">
@@ -193,7 +257,11 @@ const ConfigManager = ({ adminToken, onStatsUpdate }) => {
           {activeSection === 'basic' && (
             <BasicInfoSection 
               config={config} 
-              updateConfig={updateConfig} 
+              updateConfig={updateConfig}
+              avatarInputRef={avatarInputRef}
+              handleAvatarUpload={handleAvatarUpload}
+              resetToDefaultAvatar={resetToDefaultAvatar}
+              resetToSampleAvatar={resetToSampleAvatar}
             />
           )}
           
@@ -250,120 +318,170 @@ const ConfigManager = ({ adminToken, onStatsUpdate }) => {
 };
 
 // Basic Info Section
-const BasicInfoSection = ({ config, updateConfig }) => (
+const BasicInfoSection = ({ 
+  config, 
+  updateConfig, 
+  avatarInputRef, 
+  handleAvatarUpload, 
+  resetToDefaultAvatar, 
+  resetToSampleAvatar 
+}) => (
   <div className="config-section-content">
     <h3>🤖 Thông tin cơ bản</h3>
     
-    <div className="form-group">
-      <label>Tên AI</label>
-      <input
-        type="text"
-        value={config.ai.name}
-        onChange={(e) => updateConfig('ai.name', e.target.value)}
-        placeholder="Tên ngắn gọn"
-      />
+    {/* Avatar Management */}
+    <div className="avatar-management">
+      <h4>🖼️ Avatar Management</h4>
+      <div className="avatar-preview-section">
+        <div className="avatar-current">
+          <label>Avatar hiện tại:</label>
+          <div className="avatar-preview">
+            <Avatar size="large" />
+            <div className="avatar-info">
+              <p><strong>{config.ai.name}</strong></p>
+              <p className="avatar-source">
+                {config.ai.avatar.startsWith('data:') ? '📤 Ảnh đã upload' : 
+                 config.ai.avatar === './avatar.png' ? '🏠 Avatar mặc định' :
+                 config.ai.avatar === './sample-avatar.png' ? '🎯 Avatar mẫu' : '🔗 URL ảnh'}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="avatar-actions">
+          <div className="upload-section">
+            <button
+              type="button"
+              onClick={() => avatarInputRef.current?.click()}
+              className="admin-btn primary"
+            >
+              📤 Upload Avatar Mới
+            </button>
+            <input
+              type="file"
+              ref={avatarInputRef}
+              onChange={handleAvatarUpload}
+              accept="image/*"
+              style={{ display: 'none' }}
+            />
+            <p className="upload-hint">
+              Hỗ trợ: PNG, JPG, GIF • Tối đa 2MB • Khuyến nghị: 200x200px
+            </p>
+          </div>
+          
+          <div className="preset-avatars">
+            <button
+              type="button"
+              onClick={resetToDefaultAvatar}
+              className="admin-btn secondary"
+            >
+              🏠 Avatar Mặc Định
+            </button>
+            <button
+              type="button"
+              onClick={resetToSampleAvatar}
+              className="admin-btn secondary"
+            >
+              🎯 Avatar Mẫu
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div className="form-group">
-      <label>Tên đầy đủ</label>
-      <input
-        type="text"
-        value={config.ai.fullName}
-        onChange={(e) => updateConfig('ai.fullName', e.target.value)}
-        placeholder="Tên hiển thị đầy đủ"
-      />
-    </div>
+    <div className="form-grid">
+      <div className="form-group">
+        <label>Tên AI *</label>
+        <input
+          type="text"
+          value={config.ai.name}
+          onChange={(e) => updateConfig('ai.name', e.target.value)}
+          placeholder="VD: Peter"
+          required
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Avatar</label>
-      <input
-        type="text"
-        value={config.ai.avatar}
-        onChange={(e) => updateConfig('ai.avatar', e.target.value)}
-        placeholder="Đường dẫn hoặc emoji"
-      />
-    </div>
+      <div className="form-group">
+        <label>Tên đầy đủ</label>
+        <input
+          type="text"
+          value={config.ai.fullName}
+          onChange={(e) => updateConfig('ai.fullName', e.target.value)}
+          placeholder="VD: Peter CGI Expert"
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Avatar Fallback</label>
-      <input
-        type="text"
-        value={config.ai.avatarFallback}
-        onChange={(e) => updateConfig('ai.avatarFallback', e.target.value)}
-        placeholder="Avatar dự phòng"
-      />
-    </div>
+      <div className="form-group full-width">
+        <label>Mô tả</label>
+        <textarea
+          value={config.ai.description}
+          onChange={(e) => updateConfig('ai.description', e.target.value)}
+          placeholder="Mô tả ngắn gọn về AI"
+          rows="2"
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Mô tả</label>
-      <textarea
-        value={config.ai.description}
-        onChange={(e) => updateConfig('ai.description', e.target.value)}
-        placeholder="Mô tả ngắn gọn về AI"
-        rows="2"
-      />
-    </div>
+      <div className="form-group">
+        <label>Subtitle</label>
+        <input
+          type="text"
+          value={config.ai.subtitle}
+          onChange={(e) => updateConfig('ai.subtitle', e.target.value)}
+          placeholder="Subtitle hiển thị"
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Subtitle</label>
-      <input
-        type="text"
-        value={config.ai.subtitle}
-        onChange={(e) => updateConfig('ai.subtitle', e.target.value)}
-        placeholder="Subtitle hiển thị"
-      />
-    </div>
+      <div className="form-group">
+        <label>Welcome Title</label>
+        <input
+          type="text"
+          value={config.ai.welcomeTitle}
+          onChange={(e) => updateConfig('ai.welcomeTitle', e.target.value)}
+          placeholder="Tiêu đề chào mừng"
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Welcome Title</label>
-      <input
-        type="text"
-        value={config.ai.welcomeTitle}
-        onChange={(e) => updateConfig('ai.welcomeTitle', e.target.value)}
-        placeholder="Tiêu đề chào mừng"
-      />
-    </div>
+      <div className="form-group">
+        <label>Welcome Description</label>
+        <textarea
+          value={config.ai.welcomeDescription}
+          onChange={(e) => updateConfig('ai.welcomeDescription', e.target.value)}
+          placeholder="Mô tả chào mừng"
+          rows="3"
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Welcome Description</label>
-      <textarea
-        value={config.ai.welcomeDescription}
-        onChange={(e) => updateConfig('ai.welcomeDescription', e.target.value)}
-        placeholder="Mô tả chào mừng"
-        rows="3"
-      />
-    </div>
+      <div className="form-group">
+        <label>Welcome Footer</label>
+        <textarea
+          value={config.ai.welcomeFooter}
+          onChange={(e) => updateConfig('ai.welcomeFooter', e.target.value)}
+          placeholder="Footer chào mừng"
+          rows="2"
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Welcome Footer</label>
-      <textarea
-        value={config.ai.welcomeFooter}
-        onChange={(e) => updateConfig('ai.welcomeFooter', e.target.value)}
-        placeholder="Footer chào mừng"
-        rows="2"
-      />
-    </div>
+      <div className="form-group">
+        <label>Typing Message</label>
+        <input
+          type="text"
+          value={config.ai.typingMessage}
+          onChange={(e) => updateConfig('ai.typingMessage', e.target.value)}
+          placeholder="Tin nhắn khi AI đang gõ"
+        />
+      </div>
 
-    <div className="form-group">
-      <label>Typing Message</label>
-      <input
-        type="text"
-        value={config.ai.typingMessage}
-        onChange={(e) => updateConfig('ai.typingMessage', e.target.value)}
-        placeholder="Tin nhắn khi AI đang gõ"
-      />
-    </div>
-
-    <div className="form-group">
-      <label>Model</label>
-      <select
-        value={config.ai.model}
-        onChange={(e) => updateConfig('ai.model', e.target.value)}
-      >
-        <option value="gpt-4o">GPT-4o</option>
-        <option value="gpt-4">GPT-4</option>
-        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-      </select>
+      <div className="form-group">
+        <label>Model</label>
+        <select
+          value={config.ai.model}
+          onChange={(e) => updateConfig('ai.model', e.target.value)}
+        >
+          <option value="gpt-4o">GPT-4o</option>
+          <option value="gpt-4">GPT-4</option>
+          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+        </select>
+      </div>
     </div>
   </div>
 );

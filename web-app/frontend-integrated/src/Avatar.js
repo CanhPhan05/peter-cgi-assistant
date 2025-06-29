@@ -1,16 +1,41 @@
 import React, { useState } from 'react';
 import config from './config.json';
+import defaultAvatar from './avatar.png';
+import sampleAvatar from './sample-avatar.png';
 
 const Avatar = ({ size = 'normal', className = '' }) => {
   const [imageError, setImageError] = useState(false);
   
+  // Get avatar source - check if it's a custom upload or default
+  const getAvatarSource = () => {
+    if (config.ai.avatar.startsWith('data:')) {
+      // Base64 uploaded image
+      return config.ai.avatar;
+    } else if (config.ai.avatar === './avatar.png') {
+      // Default avatar
+      return defaultAvatar;
+    } else if (config.ai.avatar === './sample-avatar.png') {
+      // Sample avatar
+      return sampleAvatar;
+    } else if (config.ai.avatar.startsWith('http')) {
+      // External URL
+      return config.ai.avatar;
+    } else {
+      // Fallback to default
+      return defaultAvatar;
+    }
+  };
+
   const isImagePath = config.ai.avatar.includes('.png') || 
                      config.ai.avatar.includes('.jpg') || 
                      config.ai.avatar.includes('.jpeg') || 
                      config.ai.avatar.includes('.gif') || 
-                     config.ai.avatar.includes('.svg');
+                     config.ai.avatar.includes('.svg') ||
+                     config.ai.avatar.startsWith('data:') ||
+                     config.ai.avatar.startsWith('http');
 
   const handleImageError = () => {
+    console.warn('Avatar image failed to load:', config.ai.avatar);
     setImageError(true);
   };
 
@@ -36,18 +61,20 @@ const Avatar = ({ size = 'normal', className = '' }) => {
     backgroundColor: isImagePath && !imageError ? 'transparent' : '#2d2d2d',
     border: '2px solid rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
-    flexShrink: 0
+    flexShrink: 0,
+    objectFit: 'cover'
   };
 
   // If it's an image path and hasn't errored, show image
   if (isImagePath && !imageError) {
     return (
       <img
-        src={config.ai.avatar}
+        src={getAvatarSource()}
         alt={`${config.ai.name} Avatar`}
         style={avatarStyle}
         className={`avatar-image ${className}`}
         onError={handleImageError}
+        loading="lazy"
       />
     );
   }
@@ -57,8 +84,9 @@ const Avatar = ({ size = 'normal', className = '' }) => {
     <div 
       style={avatarStyle}
       className={`avatar-emoji ${className}`}
+      title={`${config.ai.name} (Emoji fallback)`}
     >
-      {config.ai.avatarFallback}
+      {config.ai.avatarFallback || '🤖'}
     </div>
   );
 };
