@@ -443,7 +443,7 @@ const ChatPage = () => {
                   e.target.style.height = 'auto';
                   e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
                 }}
-                placeholder="Hỏi Peter về CGI... hoặc Ctrl+V để paste ảnh"
+                placeholder="Làm thế nào Peter có thể giúp bạn?"
                 disabled={loading}
                 className="message-input"
                 rows={1}
@@ -493,8 +493,8 @@ const ChatPage = () => {
           </form>
 
           <div className="upload-hints">
-            💡 <strong>Cách upload ảnh:</strong> 
-            <span>Kéo thả ảnh • Ctrl+V paste ảnh • Click nút Upload</span>
+            <strong>💡 Upload ảnh:</strong> 
+            <span>Kéo thả • Ctrl+V • Click icon</span>
           </div>
         </div>
       </div>
