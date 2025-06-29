@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import config from './config.json';
+import Avatar from './Avatar';
 
 // Backend API URL
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -92,9 +94,14 @@ const LoginPage = () => {
     <div className="login-page">
       <div className="login-container">
         <div className="login-header">
-          <h1>🤖 Peter CGI Assistant</h1>
-          <p>Chuyên gia AI về CGI và chỉnh sửa ảnh</p>
-          <p className="subtitle">Đăng nhập bằng tài khoản hệ thống chính</p>
+          <div className="login-avatar-section">
+            <Avatar size="large" />
+            <div className="login-title-section">
+              <h1>{config.ai.fullName}</h1>
+              <p>{config.ai.description}</p>
+              <p className="subtitle">{config.ai.subtitle}</p>
+            </div>
+          </div>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
@@ -276,7 +283,7 @@ const ChatPage = () => {
         },
         body: JSON.stringify({
           messages: updatedMessages,
-          model: 'gpt-4o',
+          model: config.ai.model,
           conversationId
         })
       });
@@ -350,8 +357,13 @@ const ChatPage = () => {
     <div className="chat-page">
       <div className="chat-header">
         <div className="header-info">
-          <h1>🤖 Peter CGI Assistant</h1>
-          <p>Xin chào <strong>{user?.name || user?.email}</strong>!</p>
+          <div className="chat-avatar-section">
+            <Avatar size="normal" />
+            <div className="chat-title-section">
+              <h1>{config.ai.name}</h1>
+              <p>Xin chào <strong>{user?.name || user?.email}</strong>!</p>
+            </div>
+          </div>
         </div>
         <button onClick={logout} className="logout-button">
           Đăng xuất
@@ -362,16 +374,14 @@ const ChatPage = () => {
         <div className="messages-container">
           {messages.length === 0 && (
             <div className="welcome-message">
-              <h3>👋 Chào mừng đến với Peter CGI Assistant!</h3>
-              <p>Tôi là Peter, chuyên gia CGI với nhiều năm kinh nghiệm. Tôi có thể giúp bạn:</p>
+              <h3>{config.ai.welcomeTitle}</h3>
+              <p>{config.ai.welcomeDescription}</p>
               <ul>
-                <li>📊 Phân tích và đánh giá chất lượng hình ảnh CGI</li>
-                <li>💡 Đưa ra gợi ý cải thiện kỹ thuật</li>
-                <li>🎨 Hướng dẫn workflow chuyên nghiệp</li>
-                <li>⚙️ Tư vấn về lighting, texturing, rendering</li>
-                <li>🏆 So sánh với tiêu chuẩn ngành</li>
+                {config.ai.capabilities.map((capability, index) => (
+                  <li key={index}>{capability}</li>
+                ))}
               </ul>
-              <p>Hãy upload ảnh hoặc hỏi bất cứ điều gì về CGI nhé! 🚀</p>
+              <p>{config.ai.welcomeFooter}</p>
             </div>
           )}
 
@@ -398,7 +408,7 @@ const ChatPage = () => {
           {loading && (
             <div className="message assistant">
               <div className="typing-indicator">
-                Peter đang soạn tin nhắn...
+                {config.ai.typingMessage}
               </div>
             </div>
           )}
@@ -427,7 +437,7 @@ const ChatPage = () => {
                       type="button"
                       onClick={() => removeImage(index)}
                       className="remove-image-btn"
-                      title="Xóa ảnh"
+                      title={config.ui.deleteImageTooltip}
                     >
                       ✕
                     </button>
@@ -457,7 +467,7 @@ const ChatPage = () => {
                   e.target.style.height = 'auto';
                   e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
                 }}
-                placeholder="Hỏi Peter về CGI... hoặc Ctrl+V để paste ảnh"
+                placeholder={config.ui.chatPlaceholder}
                 disabled={loading}
                 className="message-input"
                 rows={1}
@@ -483,7 +493,7 @@ const ChatPage = () => {
                 onClick={() => fileInputRef.current?.click()}
                 className="upload-button"
                 disabled={loading}
-                title="Đính kèm tài liệu, hình ảnh"
+                title={config.ui.uploadTooltip}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19"/>
@@ -495,7 +505,7 @@ const ChatPage = () => {
                 type="submit" 
                 disabled={loading || (!input.trim() && selectedImages.length === 0)} 
                 className="send-button"
-                title="Gửi tin nhắn"
+                title={config.ui.sendTooltip}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="22" y1="2" x2="11" y2="13"/>
@@ -520,8 +530,9 @@ const ChatPage = () => {
           </div>
 
           <div className="upload-hints">
-            💡 <strong>Đính kèm file:</strong> 
-            <span>Kéo thả ảnh • Ctrl+V paste ảnh • Click nút +</span>
+            {config.ui.uploadHint.split('**').map((part, index) => 
+              index % 2 === 1 ? <strong key={index}>{part}</strong> : part
+            )}
           </div>
         </div>
       </div>
