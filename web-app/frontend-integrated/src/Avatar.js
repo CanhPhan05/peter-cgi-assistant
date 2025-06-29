@@ -20,6 +20,8 @@ const Avatar = ({ size = 'normal', className = '' }) => {
         return { width: '24px', height: '24px', fontSize: '12px' };
       case 'large':
         return { width: '48px', height: '48px', fontSize: '24px' };
+      case 'inline':
+        return { width: '28px', height: '28px', fontSize: '14px' };
       default:
         return { width: '32px', height: '32px', fontSize: '16px' };
     }

@@ -375,12 +375,12 @@ const ChatPage = () => {
     <div className="chat-page">
       <div className="chat-header">
         <div className="header-info">
-          <div className="chat-avatar-section">
-            <Avatar size="normal" />
-            <div className="chat-title-section">
-              <h1>{config.ai.name}</h1>
-              <p>Xin chào <strong>{user?.name || user?.email}</strong>!</p>
-            </div>
+          <div className="chat-title-section">
+            <h1>
+              <Avatar size="inline" />
+              {config.ai.name}
+            </h1>
+            <p>Xin chào <strong>{user?.name || user?.email}</strong>!</p>
           </div>
         </div>
         <button onClick={logout} className="logout-button">
