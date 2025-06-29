@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#667eea" />
+    <meta name="description" content="Peter CGI Assistant - Chuyên gia AI về CGI và chỉnh sửa ảnh" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <title>Peter CGI Assistant - AI Expert</title>
+    
+    <style>
+      /* Loading animation */
+      .initial-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        color: white;
+      }
+      
+      .loader-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>Bạn cần kích hoạt JavaScript để sử dụng Peter CGI Assistant.</noscript>
+    
+    <!-- Initial loading screen -->
+    <div id="initial-loader" class="initial-loader">
+      <div class="loader-spinner"></div>
+      <h2>🤖 Peter CGI Assistant</h2>
+      <p>Đang khởi tải chuyên gia AI...</p>
+    </div>
+    
+    <div id="root"></div>
+    
+    <script>
+      // Hide initial loader when React app loads
+      window.addEventListener('load', function() {
+        const loader = document.getElementById('initial-loader');
+        if (loader) {
+          setTimeout(() => {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+              loader.style.display = 'none';
+            }, 300);
+          }, 500);
+        }
+      });
+    </script>
+  </body>
+</html> 
