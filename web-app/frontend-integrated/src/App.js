@@ -359,7 +359,7 @@ const ChatPage = () => {
                     {message.images.map((img, imgIndex) => (
                       <img 
                         key={imgIndex} 
-                        src={`${API_URL}${img.url}`} 
+                        src={img.url || img.original_url} 
                         alt={`Uploaded ${imgIndex + 1}`}
                         className="message-image"
                       />

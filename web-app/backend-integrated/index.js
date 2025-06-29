@@ -269,25 +269,65 @@ app.post('/api/chat/send', authenticateToken, async (req, res) => {
       // Create new conversation
       const convResult = await pool.query(
         'INSERT INTO conversations (user_id, title, user_email) VALUES ($1, $2, $3) RETURNING id',
-        [userId, messages[messages.length - 1]?.content?.substring(0, 50) || 'New Chat', req.user.email]
+        [userId, messages[messages.length - 1]?.content?.substring(0, 50) || 'New Chat with Images', req.user.email]
       );
       conversation = convResult.rows[0];
     }
 
-    // Prepare messages for OpenAI
+    // Prepare messages for OpenAI with image support
     const apiMessages = [
-      { role: 'system', content: PETER_SYSTEM_PROMPT },
-      ...messages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }))
+      { role: 'system', content: PETER_SYSTEM_PROMPT }
     ];
 
-    // Call OpenAI
+    // Convert messages to OpenAI format with vision support
+    for (const msg of messages) {
+      if (msg.role === 'user') {
+        const messageContent = [];
+        
+        // Add text content
+        if (msg.content && msg.content.trim()) {
+          messageContent.push({
+            type: 'text',
+            text: msg.content
+          });
+        }
+        
+        // Add images if available
+        if (msg.images && msg.images.length > 0) {
+          for (const image of msg.images) {
+            messageContent.push({
+              type: 'image_url',
+              image_url: {
+                url: image.url || image.original_url,
+                detail: 'high'
+              }
+            });
+          }
+        }
+
+        // Only add message if it has content
+        if (messageContent.length > 0) {
+          apiMessages.push({
+            role: 'user',
+            content: messageContent
+          });
+        }
+      } else {
+        // Assistant messages
+        apiMessages.push({
+          role: msg.role,
+          content: msg.content
+        });
+      }
+    }
+
+    console.log('🖼️ Sending to OpenAI with', apiMessages.length, 'messages');
+    
+    // Call OpenAI with vision support
     const completion = await openai.chat.completions.create({
-      model: model,
+      model: model, // gpt-4o supports vision
       messages: apiMessages,
-      max_tokens: 1500,
+      max_tokens: 2000,
       temperature: 0.7,
     });
 
@@ -295,9 +335,32 @@ app.post('/api/chat/send', authenticateToken, async (req, res) => {
 
     // Save messages to database
     const userMessage = messages[messages.length - 1];
+    
+    // Save images metadata separately if exists
+    let imageIds = [];
+    if (userMessage.images && userMessage.images.length > 0) {
+      for (const image of userMessage.images) {
+        const imageResult = await pool.query(
+          'INSERT INTO images (filename, original_url, size, width, height, content_type, user_id, user_email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+          [
+            image.filename || 'uploaded-image.jpg',
+            image.url || image.original_url,
+            image.size || 0,
+            image.width || 0,
+            image.height || 0,
+            'image/jpeg',
+            userId,
+            req.user.email
+          ]
+        );
+        imageIds.push(imageResult.rows[0].id);
+      }
+    }
+
+    // Save user message with image references
     await pool.query(
-      'INSERT INTO messages (conversation_id, role, content, user_email) VALUES ($1, $2, $3, $4)',
-      [conversation.id, userMessage.role, userMessage.content, req.user.email]
+      'INSERT INTO messages (conversation_id, role, content, image_ids, user_email) VALUES ($1, $2, $3, $4, $5)',
+      [conversation.id, userMessage.role, userMessage.content, imageIds.length > 0 ? imageIds : null, req.user.email]
     );
 
     const aiMessageResult = await pool.query(
@@ -310,7 +373,8 @@ app.post('/api/chat/send', authenticateToken, async (req, res) => {
       content: aiResponse,
       conversationId: conversation.id,
       messageId: aiMessageResult.rows[0].id,
-      usage: completion.usage
+      usage: completion.usage,
+      processedImages: userMessage.images ? userMessage.images.length : 0
     });
 
   } catch (error) {
@@ -471,8 +535,13 @@ app.post('/api/images/upload', authenticateToken, upload.array('images', 5), asy
       ]);
 
       processedImages.push({
-        ...result.rows[0],
-        url: dataUrl
+        id: result.rows[0].id,
+        filename: result.rows[0].filename,
+        url: dataUrl, // This is the base64 data URL
+        original_url: dataUrl,
+        size: result.rows[0].size,
+        width: result.rows[0].width,
+        height: result.rows[0].height
       });
     }
 
