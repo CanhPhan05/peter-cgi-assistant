@@ -427,8 +427,9 @@ const ChatPage = () => {
                       type="button"
                       onClick={() => removeImage(index)}
                       className="remove-image-btn"
+                      title="Xóa ảnh"
                     >
-                      ❌
+                      ✕
                     </button>
                     <div className="image-name">{img.name}</div>
                   </div>

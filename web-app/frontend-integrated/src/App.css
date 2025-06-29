@@ -472,79 +472,95 @@ body {
   60% { transform: translateY(-5px); }
 }
 
-/* Selected Images Preview - Limited Height */
+/* Grok-style Compact Image Preview */
 .selected-images {
-  padding: 16px 20px 12px 20px;
-  border-bottom: 1px solid #555555;
-  max-height: 150px; /* Limit height to not cover quick actions */
-  overflow-y: auto;
+  padding: 12px 16px 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .selected-images-label {
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 12px;
-  font-size: 0.9em;
+  font-weight: 500;
+  color: #a0a0a0;
+  margin-bottom: 8px;
+  font-size: 0.8em;
 }
 
 .selected-images-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Smaller thumbnails */
-  gap: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .selected-image {
   position: relative;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #404040;
-  border: 1px solid #555555;
-  transition: all 0.3s ease;
+  background: #2d2d2d;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  width: 48px; /* Much smaller like Grok */
+  height: 48px;
+  flex-shrink: 0;
+  animation: slideInScale 0.3s ease-out;
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .selected-image:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
 .selected-image img {
   width: 100%;
-  height: 60px; /* Smaller height */
+  height: 100%;
   object-fit: cover;
   display: block;
 }
 
 .remove-image-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  background: rgba(0, 0, 0, 0.7);
+  top: -6px;
+  right: -6px;
+  background: #e53e3e;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  opacity: 0; /* Hidden by default */
+  transform: scale(0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Show remove button on hover */
+.selected-image:hover .remove-image-btn {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .remove-image-btn:hover {
-  background: #e53e3e;
+  background: #dc2626;
   transform: scale(1.1);
 }
 
 .image-name {
-  padding: 6px;
-  font-size: 0.75em;
-  color: #a0a0a0;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: none; /* Hide filename for cleaner look like Grok */
 }
 
 /* Message Form - ChatGPT Style */
@@ -689,13 +705,17 @@ body {
     max-width: none;
   }
   
-  .selected-images-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 10px;
+  .selected-images {
+    padding: 10px 12px 6px 12px;
   }
   
-  .selected-image img {
-    height: 60px;
+  .selected-images-grid {
+    gap: 6px;
+  }
+  
+  .selected-image {
+    width: 40px;
+    height: 40px;
   }
   
   .input-row {
@@ -716,16 +736,24 @@ body {
 
 @media (max-width: 480px) {
   .selected-images {
-    padding: 15px;
+    padding: 8px 10px 6px 10px;
   }
   
   .selected-images-grid {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 8px;
+    gap: 4px;
   }
   
-  .selected-image img {
-    height: 50px;
+  .selected-image {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .remove-image-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -5px;
+    right: -5px;
   }
   
   .upload-hints {
