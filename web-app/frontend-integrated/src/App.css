@@ -576,6 +576,136 @@ body {
   border: 1px solid #555555;
 }
 
+/* Formatted Message Styling - ChatGPT Style */
+.formatted-message {
+  line-height: 1.6;
+  color: #ffffff;
+}
+
+.formatted-message h1,
+.formatted-message h2,
+.formatted-message h3 {
+  margin: 16px 0 12px 0;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.formatted-message h1 {
+  font-size: 1.5em;
+  border-bottom: 2px solid #555555;
+  padding-bottom: 8px;
+}
+
+.formatted-message h2 {
+  font-size: 1.3em;
+}
+
+.formatted-message h3 {
+  font-size: 1.1em;
+}
+
+.formatted-message p {
+  margin: 12px 0;
+}
+
+.formatted-message strong {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.formatted-message em {
+  font-style: italic;
+  color: #e0e0e0;
+}
+
+.formatted-message code {
+  background: #2d2d2d;
+  color: #ffa726;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', Monaco, 'Inconsolata', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.formatted-message pre {
+  background: #1a1a1a;
+  border: 1px solid #555555;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+
+.formatted-message pre code {
+  background: transparent;
+  color: #e0e0e0;
+  padding: 0;
+  border-radius: 0;
+  display: block;
+  font-size: 0.9em;
+}
+
+.formatted-message ul,
+.formatted-message ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+.formatted-message li {
+  margin: 8px 0;
+  color: #ffffff;
+  position: relative;
+}
+
+.formatted-message ul li {
+  list-style-type: disc;
+}
+
+.formatted-message ul li::marker {
+  color: #10a37f;
+}
+
+.formatted-message ol li {
+  list-style-type: decimal;
+}
+
+.formatted-message ol li::marker {
+  color: #10a37f;
+  font-weight: 600;
+}
+
+/* Special styling for nested lists */
+.formatted-message ul ul,
+.formatted-message ol ol,
+.formatted-message ul ol,
+.formatted-message ol ul {
+  margin: 4px 0;
+}
+
+/* Improve spacing between formatted elements */
+.formatted-message > *:first-child {
+  margin-top: 0;
+}
+
+.formatted-message > *:last-child {
+  margin-bottom: 0;
+}
+
+/* Code block syntax highlighting improvements */
+.formatted-message pre code {
+  line-height: 1.5;
+}
+
+/* Links styling if any */
+.formatted-message a {
+  color: #10a37f;
+  text-decoration: none;
+}
+
+.formatted-message a:hover {
+  text-decoration: underline;
+}
+
 .message-images {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

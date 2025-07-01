@@ -427,7 +427,10 @@ const ChatPage = () => {
                     ))}
                   </div>
                 )}
-                <div>{message.content}</div>
+                {message.role === 'assistant' ? 
+                  <FormattedMessage content={message.content} /> : 
+                  <div>{message.content}</div>
+                }
               </div>
             </div>
           ))}
@@ -562,6 +565,64 @@ const ChatPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Text Formatter Component for AI responses
+const FormattedMessage = ({ content }) => {
+  const formatText = (text) => {
+    if (!text) return '';
+    
+    // Convert text to HTML with proper formatting
+    let formatted = text
+      // Handle line breaks
+      .replace(/\n/g, '<br/>')
+      
+      // Handle bold text **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      
+      // Handle italic text *text* or _text_
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      
+      // Handle code blocks ```code```
+      .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+      
+      // Handle inline code `code`
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      
+      // Handle bullet points (- or *)
+      .replace(/^[\s]*[-*]\s+(.+)$/gm, '<li>$1</li>')
+      
+      // Handle numbered lists (1. 2. etc.)
+      .replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li data-number="$1">$2</li>')
+      
+      // Handle headers (### text)
+      .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
+      .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+      .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+    
+    // Wrap consecutive <li> elements in <ul>
+    formatted = formatted.replace(/(<li(?:\s[^>]*)?>.*?<\/li>(?:\s*<br\/>\s*<li(?:\s[^>]*)?>.*?<\/li>)*)/gs, '<ul>$1</ul>');
+    
+    // Clean up extra <br/> tags around lists and headers
+    formatted = formatted
+      .replace(/<br\/>\s*<ul>/g, '<ul>')
+      .replace(/<\/ul>\s*<br\/>/g, '</ul>')
+      .replace(/<br\/>\s*<h([1-6])>/g, '<h$1>')
+      .replace(/<\/h([1-6])>\s*<br\/>/g, '</h$1>')
+      .replace(/<br\/>\s*<pre>/g, '<pre>')
+      .replace(/<\/pre>\s*<br\/>/g, '</pre>');
+    
+    return formatted;
+  };
+
+  return (
+    <div 
+      className="formatted-message"
+      dangerouslySetInnerHTML={{ __html: formatText(content) }}
+    />
   );
 };
 

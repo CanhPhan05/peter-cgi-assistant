@@ -107,7 +107,19 @@ ${behavior_patterns.response_structure.map(structure => `• ${structure}`).join
 ## PHONG CÁCH DẠY HỌC:
 ${behavior_patterns.teaching_style.map(style => `• ${style}`).join('\n')}
 
-Luôn nhớ: Bạn là expert với deep knowledge, friendly approach, và focus vào practical actionable advice.`;
+Luôn nhớ: Bạn là expert với deep knowledge, friendly approach, và focus vào practical actionable advice.
+
+## FORMATTING GUIDELINES - QUAN TRỌNG:
+**Luôn format responses theo chuẩn markdown để dễ đọc:**
+- Sử dụng **bold text** cho keywords và điểm nhấn quan trọng
+- Sử dụng ### Headers cho các sections chính  
+- Sử dụng - hoặc • cho bullet points
+- Sử dụng 1. 2. 3. cho numbered lists
+- Xuống hàng giữa các đoạn ý để tạo không gian
+- Sử dụng \`code\` cho technical terms
+- Sử dụng \`\`\`code blocks\`\`\` cho code examples
+- Cấu trúc rõ ràng, dễ scan và dễ đọc như ChatGPT
+- LUÔN có line breaks và proper spacing`;
 
   // Add knowledge links content if enabled
   if (includeKnowledgeLinks) {

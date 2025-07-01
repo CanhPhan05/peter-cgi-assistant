@@ -117,29 +117,20 @@
     "cache_duration_hours": 24,
     "max_content_length": 50000,
     "links": [
+      
       {
-        "id": "siggraph_trends",
-        "title": "SIGGRAPH 2024 CGI Trends",
-        "url": "https://www.siggraph.org/discover/news/",
-        "type": "web",
-        "category": "industry_trends",
-        "description": "Latest CGI industry developments and techniques",
-        "priority": "high",
-        "active": true
-      },
-      {
-        "id": "blender_cycles_docs",
-        "title": "Blender Cycles Documentation",
+        "id": " CAV Studio Workflows",
+        "title": "CAV Studio Workflows",
         "url": "https://docs.blender.org/manual/en/latest/render/cycles/",
         "type": "documentation", 
         "category": "tools",
-        "description": "Complete Cycles rendering engine guide",
+        "description": "Workflow guide",
         "priority": "medium",
         "active": true
       },
       {
-        "id": "studio_style_guide",
-        "title": "VFX Style Guide - Studio Standards",
+        "id": "Technical Guide",
+        "title": "Technical Guide",
         "url": "https://drive.google.com/file/d/your-file-id/view",
         "type": "pdf",
         "category": "standards",
@@ -150,7 +141,7 @@
       {
         "id": "cgi_portfolio_ref",
         "title": "CGI Portfolio Examples",
-        "url": "https://www.artstation.com/channels/cgi",
+        "url": "https://www.dboxcg.com/portfolio/",
         "type": "gallery",
         "category": "inspiration",
         "description": "High-quality CGI works for reference",
