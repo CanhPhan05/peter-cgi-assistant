@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import './App.css';
 
+// Backend API URL
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 const AdminLogin = ({ onLoginSuccess }) => {
   const [credentials, setCredentials] = useState({
     email: '',
@@ -15,7 +18,7 @@ const AdminLogin = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch(`${API_URL}/api/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

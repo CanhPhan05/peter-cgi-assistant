@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
+// Backend API URL
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
   const [links, setLinks] = useState([]);
   const [categories, setCategories] = useState({
@@ -31,7 +34,8 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
 
   const loadKnowledgeLinks = async () => {
     try {
-      const response = await fetch('/api/admin/knowledge-links', {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
         },
@@ -62,7 +66,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
 
   const toggleKnowledgeLinks = async () => {
     try {
-      const response = await fetch('/api/admin/knowledge-links/toggle', {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links/toggle`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +92,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
 
   const addLink = async (linkData) => {
     try {
-      const response = await fetch('/api/admin/knowledge-links', {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +119,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
 
   const updateLink = async (linkId, updateData) => {
     try {
-      const response = await fetch(`/api/admin/knowledge-links/${linkId}`, {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links/${linkId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +152,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
     }
 
     try {
-      const response = await fetch(`/api/admin/knowledge-links/${linkId}`, {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links/${linkId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -175,7 +179,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
     setTestResults(prev => ({ ...prev, [testKey]: { loading: true } }));
 
     try {
-      const response = await fetch('/api/admin/knowledge-links/test', {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links/test`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -217,17 +221,13 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
 
   const addCategory = async (categoryData) => {
     try {
-      const response = await fetch(`/api/admin/knowledge-links/categories/${categoryData.id}`, {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links/categories/${categoryData.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${adminToken}`,
         },
-        body: JSON.stringify({
-          name: categoryData.name,
-          icon: categoryData.icon || '📋',
-          description: categoryData.description || ''
-        }),
+        body: JSON.stringify(categoryData),
       });
 
       const data = await response.json();
@@ -247,7 +247,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
 
   const updateCategory = async (categoryId, categoryData) => {
     try {
-      const response = await fetch(`/api/admin/knowledge-links/categories/${categoryId}`, {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links/categories/${categoryId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -286,7 +286,7 @@ const KnowledgeLinksManager = ({ adminToken, onStatsUpdate }) => {
     }
 
     try {
-      const response = await fetch(`/api/admin/knowledge-links/categories/${categoryId}`, {
+      const response = await fetch(`${API_URL}/api/admin/knowledge-links/categories/${categoryId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`,

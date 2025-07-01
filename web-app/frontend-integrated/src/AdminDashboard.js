@@ -3,6 +3,9 @@ import ConfigManager from './ConfigManager';
 import KnowledgeLinksManager from './KnowledgeLinksManager';
 import './App.css';
 
+// Backend API URL
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 const AdminDashboard = ({ adminInfo, adminToken, onLogout }) => {
   const [activeTab, setActiveTab] = useState('config');
   const [systemStats, setSystemStats] = useState(null);
@@ -14,7 +17,7 @@ const AdminDashboard = ({ adminInfo, adminToken, onLogout }) => {
 
   const loadSystemStats = async () => {
     try {
-      const response = await fetch('/api/admin/config', {
+      const response = await fetch(`${API_URL}/api/admin/config`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
         },
@@ -169,7 +172,7 @@ const AdminSettings = ({ adminInfo, adminToken }) => {
     setMessage('');
 
     try {
-      const response = await fetch('/api/admin/change-password', {
+      const response = await fetch(`${API_URL}/api/admin/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

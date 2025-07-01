@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import Avatar from './Avatar';
 
+// Backend API URL
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 const ConfigManager = ({ adminToken, onStatsUpdate }) => {
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +20,8 @@ const ConfigManager = ({ adminToken, onStatsUpdate }) => {
 
   const loadConfig = async () => {
     try {
-      const response = await fetch('/api/admin/config', {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/admin/config`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`,
         },
@@ -37,12 +41,12 @@ const ConfigManager = ({ adminToken, onStatsUpdate }) => {
   };
 
   const saveConfig = async () => {
-    setSaving(true);
-    setError('');
-    setMessage('');
-
     try {
-      const response = await fetch('/api/admin/config', {
+      setSaving(true);
+      setMessage('');
+      setError('');
+
+      const response = await fetch(`${API_URL}/api/admin/config`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
